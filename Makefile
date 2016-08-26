@@ -3,7 +3,7 @@ ts_build_dir=build/js
 
 ts_compiler_options+=--outDir $(ts_build_dir)
 ts_compiler_options+=--target es5
-ts_compiler_options+=--lib es7
+ts_compiler_options+=--lib es7,dom
 ts_compiler_options+=--declaration
 ts_compiler_options+=--experimentalDecorators
 ts_compiler_options+=--forceConsistentCasingInFileNames
