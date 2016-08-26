@@ -3,7 +3,8 @@ import {Manager, Handler} from '../events';
 
 export type MouseEventName = (
 	'mousedown' |
-	'mouseup'
+	'mouseup' |
+	'mousemove'
 );
 
 
@@ -16,7 +17,7 @@ export const events: Manager<MouseEventName, MouseHandler> =
 
 export function listen(
 	mgr: Manager<string, MouseEvent>,
-	events: string[] = ['mousedown', 'mouseup']
+	events: string[] = ['mousedown', 'mouseup', 'mousemove']
 )
 	: void
 {
