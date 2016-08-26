@@ -12,3 +12,8 @@ export function identity<T>(t: T): T {
 export function randInRange(min: number, max: number): number {
 	return Math.random() * (max - min) - min;
 }
+
+
+export function clamp(x: number, min: number, max: number): number {
+	return Math.max(min, Math.min(x, max));
+}
