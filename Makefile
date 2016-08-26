@@ -29,7 +29,7 @@ typings_bin=node_modules/typings/dist/bin.js
 
 
 define tsc_compile
-$(ts_compiler_bin) $(ts_compiler_options) $+
+$(ts_compiler_bin) $(ts_compiler_options)
 endef
 
 
@@ -38,8 +38,8 @@ $(ts_build_dir)/%.js: $(ts_src_dir)/%.ts
 
 
 .PHONY: all
-all: $(ts_outputs)
-	
+all:
+	$(tsc_compile) $(ts_sources)
 
 
 .PHONY: clean
