@@ -1,5 +1,4 @@
 import {combine as hashCombine} from './util/hash';
-import {DefaultMap} from './util/DefaultMap';
 import {noop} from './util/misc';
 
 
@@ -42,9 +41,7 @@ export interface ManagerOptions<Category, Data> {
 
 
 export class Manager<Category, Data> {
-	private handlers: DefaultMap<Category, CategoryHandlers> = new DefaultMap(
-		(cat: Category): CategoryHandlers => new Map()
-	);
+	private handlers: Map<Category, CategoryHandlers> = new Map();
 
 	private metadata: (category: Category, data: Data) => any;
 
