@@ -66,7 +66,7 @@ export class Manager<Category, Data> {
 		context?: any,
 		limit: number = Infinity
 	)
-		: void
+		: this
 	{
 		let handlers: CategoryHandlers|undefined = this.handlers.get(category);
 		if (!handlers) {
@@ -81,6 +81,7 @@ export class Manager<Category, Data> {
 			on: true,
 			max: limit
 		});
+		return this;
 	}
 
 	/**
@@ -91,9 +92,9 @@ export class Manager<Category, Data> {
 	 * @param context - the optional context for the handler to be called with.
 	 */
 	once(category: Category, handler: Handler<Category, Data>, context?: any)
-		: void
+		: this
 	{
-		this.on(category, handler, context, 1);
+		return this.on(category, handler, context, 1);
 	}
 
 	/**
@@ -104,7 +105,7 @@ export class Manager<Category, Data> {
 	 * @param context - the optional context for the handler to be called with.
 	 */
 	off(category: Category, handler: Handler<Category, Data>, context?: any)
-		: void
+		: this
 	{
 		const handlers: CategoryHandlers|undefined =
 			this.handlers.get(category);
@@ -113,6 +114,7 @@ export class Manager<Category, Data> {
 				hashCombine(handler, context)
 			);
 		}
+		return this;
 	}
 
 	/**
@@ -121,11 +123,12 @@ export class Manager<Category, Data> {
 	 * @param category - the event category.
 	 * @param ev - the event to fire.
 	 */
-	fire(category: Category, data: Data): void {
+	fire(category: Category, data: Data): this {
 		const handlers: CategoryHandlers|undefined =
 			this.handlers.get(category);
+
 		if (!handlers) {
-			return;
+			return this;
 		}
 
 		const ev: Event<Category, Data> = {
@@ -141,5 +144,6 @@ export class Manager<Category, Data> {
 				handlers.delete(res.value.id);
 			}
 		}
+		return this;
 	}
 }
