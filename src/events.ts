@@ -141,11 +141,12 @@ export class Manager<Category, Data> {
 		};
 		let iter: IterableIterator<HandlerInfo> = handlers.values();
 		let res: IteratorResult<HandlerInfo> = iter.next();
-		while (res) {
+		while (!res.done) {
 			res.value.fn.call(res.value.ctx, ev);
-			if (res.value.max <= 0) {
+			if (--res.value.max <= 0) {
 				handlers.delete(res.value.id);
 			}
+			res = iter.next();
 		}
 		return this;
 	}
