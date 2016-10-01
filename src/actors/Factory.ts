@@ -1,29 +1,4 @@
-export interface Component {
-	onAdd(actor: Actor): void;
-	onRemove(actor: Actor): void;
-}
-
-
-export interface ComponentDef {
-	type: string;
-}
-
-
-export interface ActorDef {
-	alias?: string;
-	cmp: ComponentDef[];
-}
-
-
-export class Actor {
-	alias: string|undefined;
-	cmp: { [id: string]: Component; } = {};
-
-	constructor(def: ActorDef, cmp: { [id: string]: Component; }) {
-		this.alias = def.alias;
-		this.cmp = cmp;
-	}
-}
+import {Actor, ActorDef, Component, ComponentDef} from './Actor';
 
 
 export interface ComponentFactory {
@@ -40,13 +15,13 @@ export class Factory {
 	}
 
 	/** Create an actor from a definition. */
-	actor(def: ActorDef): Actor {
+	actor(def: ActorDef, init: boolean = true): Actor {
 		const components: { [id: string]: Component; } = {};
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
 			components[cmpDef.type] = this.component(cmpDef);
 		}
-		return new Actor(def, components);
+		return new Actor(def, components, init);
 	}
 
 	component(def: ComponentDef): Component {
