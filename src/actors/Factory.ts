@@ -10,8 +10,17 @@ export class Factory {
 	private cmpFactories: Map<string, ComponentFactory> = new Map();
 
 	/** Set the component factory for a type of component. */
-	setCmpFactory(id: string, fn: ComponentFactory): void {
+	setCmpFactory(id: string, fn: ComponentFactory): this {
 		this.cmpFactories.set(id, fn);
+		return this;
+	}
+
+	/** Set multiple component factories at a time. */
+	setCmpFactories(obj: { [id: string]: ComponentFactory; }): this {
+		for (let id in obj) {
+			this.cmpFactories.set(id, obj[id]);
+		}
+		return this;
 	}
 
 	/** Create an actor from a definition. */
