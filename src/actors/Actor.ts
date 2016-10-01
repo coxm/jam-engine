@@ -18,16 +18,19 @@ export interface ActorDef {
 
 
 export class Actor {
-	readonly alias: string|undefined;
 	cmp: { [id: string]: Component; } = {};
-	initialised: { [id: string]: boolean; } = {};
+	readonly alias: string|undefined;
+	readonly id: symbol;
+	private initialised: { [id: string]: boolean; } = {};
 
 	constructor(
+		id: symbol,
 		def: ActorDef,
 		cmp: { [id: string]: Component; },
 		init: boolean
 	) {
 		this.alias = def.alias;
+		this.id = id || Symbol(this.alias);
 		this.cmp = cmp || {};
 		if (init !== false) {
 			this.init();
