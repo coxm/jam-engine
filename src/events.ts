@@ -114,6 +114,12 @@ export class Manager<Category, Data> {
 		return this;
 	}
 
+	/** Cancel all event handlers. */
+	clear(): this {
+		this.handlers.clear();
+		return this;
+	}
+
 	/**
 	 * Fire an event.
 	 *
