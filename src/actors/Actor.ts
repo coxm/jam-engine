@@ -13,6 +13,7 @@ export interface Component {
 export interface ActorDef {
 	alias?: string;
 	cmp: ComponentDef[];
+	position: [number, number];
 }
 
 

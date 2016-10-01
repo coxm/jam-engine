@@ -2,7 +2,7 @@ import {Actor, ActorDef, Component, ComponentDef} from './Actor';
 
 
 export interface ComponentFactory {
-	(def: ComponentDef): Component;
+	(actorDef: ActorDef, cmpDef: ComponentDef): Component;
 }
 
 
@@ -28,17 +28,17 @@ export class Factory {
 		const components: { [id: string]: Component; } = {};
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
-			components[cmpDef.type] = this.component(cmpDef);
+			components[cmpDef.type] = this.component(def, cmpDef);
 		}
 		return new Actor(def, components, init);
 	}
 
-	component(def: ComponentDef): Component {
+	component(actorDef: ActorDef, cmpDef: ComponentDef): Component {
 		const factory: ComponentFactory|undefined =
-			this.cmpFactories.get(def.type);
+			this.cmpFactories.get(cmpDef.type);
 		if (!factory) {
-			throw new Error(`No such component factory: ${def.type}`);
+			throw new Error(`No such component factory: ${cmpDef.type}`);
 		}
-		return (<ComponentFactory> factory)(def);
+		return (<ComponentFactory> factory)(actorDef, cmpDef);
 	}
 }
