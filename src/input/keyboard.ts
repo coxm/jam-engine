@@ -23,11 +23,13 @@ export const actions: {
 	down: symbol;
 	left: symbol;
 	right: symbol;
+	pause: symbol
 } = {
 	up: Symbol('up'),
 	down: Symbol('down'),
 	left: Symbol('left'),
-	right: Symbol('right')
+	right: Symbol('right'),
+	pause: Symbol('pause'),
 };
 
 
@@ -38,6 +40,8 @@ export const actions: {
  * be changed instead, using {@link setKeyTranslator}.
  */
 export const defaultKeyCodeSymbols: { [code: number]: symbol; } = {
+	19: actions.pause, // Pause/Break.
+
 	37: actions.left,  // Left.
 	38: actions.up,    // Up.
 	39: actions.right, // Right.
