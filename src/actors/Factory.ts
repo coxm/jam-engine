@@ -51,7 +51,11 @@ export class Factory<ActorType> {
 		const components: { [id: string]: Component; } = {};
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
-			components[cmpDef.type] = this.component(cmpDef, actorID, def);
+			const cmp: Component = this.component(cmpDef, actorID, def);
+			if (components[cmp.key]) {
+				throw new Error(`Duplicated component key "${cmp.key}"`);
+			}
+			components[cmp.key] = cmp;
 		}
 
 		++this.counter;
@@ -62,9 +66,9 @@ export class Factory<ActorType> {
 		:	Component
 	{
 		const factory: ComponentFactory|undefined =
-			this.cmpFactories.get(cmpDef.type);
+			this.cmpFactories.get(cmpDef.factory);
 		if (!factory) {
-			throw new Error(`No such component factory: ${cmpDef.type}`);
+			throw new Error(`No such component factory: ${cmpDef.factory}`);
 		}
 		return (<ComponentFactory> factory)(cmpDef, actorID, actorDef);
 	}

@@ -1,24 +1,33 @@
 export interface ComponentDef {
-	type: string;
+	/** The ID of the factory to use for this component definition. */
+	factory: string;
 }
 
 
 export interface Component {
-	readonly type: string;
+	/**
+	 * The key under which this component is stored in an Actor.
+	 *
+	 * The component will be accessible via `actor.cmp[key]`.
+	 */
+	readonly key: string;
+	/** Add this component to an actor. */
 	onAdd(actor: Actor): void;
+	/** Remove this component from an actor. */
 	onRemove(actor: Actor): void;
 }
 
 
 export interface ActorDef {
 	alias?: string;
+	schema?: string;
 	cmp: ComponentDef[];
 	position: [number, number];
 }
 
 
 export class Actor {
-	cmp: { [id: string]: Component; } = {};
+	cmp: { [key: string]: Component; } = {};
 	readonly alias: string|undefined;
 	readonly id: symbol;
 	private initialised: { [id: string]: boolean; } = {};
@@ -38,18 +47,18 @@ export class Actor {
 	}
 
 	setCmp(cmp: Component, init: boolean): void {
-		this.cmp[cmp.type] = cmp;
+		this.cmp[cmp.key] = cmp;
 		if (init !== false) {
 			cmp.onAdd(this);
 		}
 	}
 
-	removeCmp(type: string): void {
-		if (this.initialised[type]) {
-			this.cmp[type].onRemove(this);
+	removeCmp(key: string): void {
+		if (this.initialised[key]) {
+			this.cmp[key].onRemove(this);
 		}
-		delete this.cmp[type];
-		delete this.initialised[type];
+		delete this.cmp[key];
+		delete this.initialised[key];
 	}
 
 	init(): void {
