@@ -57,6 +57,9 @@ export class State {
 	}
 
 	start(): void {
+		if (State.currentState && !State.currentState.isAncestorOf(this)) {
+			State.currentState.end();
+		}
 		State.currentState = this;
 		this.preload().then((preloadData: any): void => {
 			this.onStart(preloadData);
@@ -102,6 +105,17 @@ export class State {
 		this.running = false;
 		this.onEnd();
 		this.parent.nextChild();
+	}
+
+	isAncestorOf(state: State): boolean {
+		let parent: State|null = state.parent;
+		while (parent) {
+			if (this === parent) {
+				return true;
+			}
+			parent = parent.parent;
+		}
+		return false;
 	}
 
 	startChild(child: string|State): void {
