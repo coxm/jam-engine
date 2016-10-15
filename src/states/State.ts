@@ -29,7 +29,8 @@ export class State {
 	private startChildrenImmediately: boolean;
 	private endWhenChildrenDone: boolean;
 	private preloaded: Promise<any> | null;
-	private isPaused: boolean;
+	private running: boolean;
+	private paused: boolean;
 
 	constructor(options: StateOptions) {
 		this.name = options.name;
@@ -39,7 +40,16 @@ export class State {
 		this.startChildrenImmediately = !!options.startChildrenImmediately;
 		this.endWhenChildrenDone = !!options.endWhenChildrenDone;
 		this.preloaded = null;
-		this.isPaused = !!options.paused;
+		this.running = false;
+		this.paused = !!options.paused;
+	}
+
+	isPaused(): boolean {
+		return this.paused;
+	}
+
+	isRunning(): boolean {
+		return this.running;
 	}
 
 	preload(): Promise<any> {
@@ -50,6 +60,7 @@ export class State {
 		State.currentState = this;
 		this.preload().then((preloadData: any): void => {
 			this.onStart(preloadData);
+			this.running = true;
 			if (this.startChildrenImmediately) {
 				this.nextChild();
 			}
@@ -57,16 +68,16 @@ export class State {
 	}
 
 	pause(): void {
-		if (!this.isPaused) {
+		if (!this.paused) {
 			this.onPause();
-			this.isPaused = true;
+			this.paused = true;
 		}
 	}
 
 	unpause(): void {
-		if (this.isPaused) {
+		if (this.paused) {
 			this.onUnpause();
-			this.isPaused = false;
+			this.paused = false;
 		}
 	}
 
@@ -76,7 +87,7 @@ export class State {
 	 * @returns true if paused after this call; otherwise false.
 	 */
 	togglePause(): boolean {
-		if (this.isPaused) {
+		if (this.paused) {
 			this.unpause();
 			return false;
 		}
@@ -88,6 +99,7 @@ export class State {
 		if (this.parent === null) {
 			throw new Error("Ending state with no parent");
 		}
+		this.running = false;
 		this.onEnd();
 		this.parent.nextChild();
 	}
