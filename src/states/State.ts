@@ -1,3 +1,6 @@
+import {noop} from '../util/misc';
+
+
 export interface StateOptions {
 	name: string;
 	parent?: State;
@@ -18,12 +21,20 @@ export class State {
 		return State.currentState;
 	}
 
-	readonly children: State[];
-
-	private static currentState: State;
+	static onAnyPreloadBegin: (state: State) => void = noop;
+	static onAnyPreloadEnd: (state: State, data: any) => void = noop;
+	static onAnyStart: (state: State, data: any) => void = noop;
+	static onAnyPause: (state: State) => void = noop;
+	static onAnyUnpause: (state: State) => void = noop;
+	static onAnyEnd: (state: State) => void = noop;
 
 	readonly name: string;
-	readonly parent: State | null;
+
+	private parentState: State | null;
+
+	private childStates: State[];
+
+	private static currentState: State;
 
 	private currentChild: number;
 	private startChildrenImmediately: boolean;
@@ -34,14 +45,18 @@ export class State {
 
 	constructor(options: StateOptions) {
 		this.name = options.name;
-		this.children = [];
+		this.childStates = [];
 		this.currentChild = -1;
-		this.parent = options.parent || null;
+		this.parentState = options.parent || null;
 		this.startChildrenImmediately = !!options.startChildrenImmediately;
 		this.endWhenChildrenDone = !!options.endWhenChildrenDone;
 		this.preloaded = null;
 		this.running = false;
 		this.paused = !!options.paused;
+	}
+
+	get parent(): State|null {
+		return this.parentState;
 	}
 
 	isPaused(): boolean {
@@ -53,7 +68,15 @@ export class State {
 	}
 
 	preload(): Promise<any> {
-		return this.preloaded || (this.preloaded = this.doPreload());
+		State.onAnyPreloadBegin(this);
+		return this.preloaded || (
+			this.preloaded = this.doPreload().then(
+				<Data>(data: Data): Data => {
+					State.onAnyPreloadEnd(this, data);
+					return data;
+				}
+			)
+		);
 	}
 
 	start(): void {
@@ -62,6 +85,7 @@ export class State {
 		}
 		State.currentState = this;
 		this.preload().then((preloadData: any): void => {
+			State.onAnyStart(this, preloadData);
 			this.onStart(preloadData);
 			this.running = true;
 			if (this.startChildrenImmediately) {
@@ -72,6 +96,7 @@ export class State {
 
 	pause(): void {
 		if (!this.paused) {
+			State.onAnyPause(this);
 			this.onPause();
 			this.paused = true;
 		}
@@ -79,6 +104,7 @@ export class State {
 
 	unpause(): void {
 		if (this.paused) {
+			State.onAnyUnpause(this);
 			this.onUnpause();
 			this.paused = false;
 		}
@@ -99,12 +125,13 @@ export class State {
 	}
 
 	end(): void {
-		if (this.parent === null) {
+		if (this.parentState === null) {
 			throw new Error("Ending state with no parent");
 		}
 		this.running = false;
+		State.onAnyEnd(this);
 		this.onEnd();
-		this.parent.nextChild();
+		this.parentState.onChildEnd(this);
 	}
 
 	isAncestorOf(state: State): boolean {
@@ -113,17 +140,17 @@ export class State {
 			if (this === parent) {
 				return true;
 			}
-			parent = parent.parent;
+			parent = parent.parentState;
 		}
 		return false;
 	}
 
 	startChild(child: string|State): void {
-		(typeof child === 'string' ? this.getChild(child) : child).start();
+		(typeof child === 'string' ? this.child(child) : child).start();
 	}
 
-	getChild(name: string): State {
-		const state: State|undefined = this.children.find(
+	child(name: string): State {
+		const state: State|undefined = this.childStates.find(
 			(c: State): boolean => c.name === name
 		);
 
@@ -132,6 +159,41 @@ export class State {
 		}
 
 		return state;
+	}
+
+	addChild(child: State): void {
+		this.childStates.push(child);
+		child.parentState = this;
+	}
+
+	removeChild(child: string|State): void {
+		const index: number = (typeof child === 'string'
+			?	this.childStates.findIndex(
+					(c: State): boolean => c.name === child
+				)
+			:	this.childStates.findIndex((c: State): boolean => c === child)
+		);
+		if (index < 0) {
+			throw new Error("No such child state: " + (
+				typeof child === 'string' ? child : child.name
+			));
+		}
+		this.childStates.splice(index, 1);
+		if (this.currentChild >= index) {
+			--this.currentChild;
+		}
+	}
+
+	children(): IterableIterator<[number, State]> {
+		return this.childStates.entries();
+	}
+
+	mapChildren<T>(fn: (child: State, i: number) => T): T[] {
+		return this.childStates.map(fn);
+	}
+
+	jumpToChild(child: string|State): void {
+		(typeof child === 'string' ? this.child(child) : child).start();
 	}
 
 	protected doPreload(): Promise<any> {
@@ -150,6 +212,12 @@ export class State {
 	protected onEnd(): void {
 	}
 
+	protected onChildEnd(child: State): void {
+		if (this.startChildrenImmediately) {
+			this.nextChild();
+		}
+	}
+
 	private nextChild(): void {
 		if (
 			++this.currentChild === this.children.length &&
@@ -157,6 +225,10 @@ export class State {
 		) {
 			this.end();
 		}
-		this.children[this.currentChild].start();
+		const next: State = this.childStates[this.currentChild];
+		if (!next) {
+			throw new Error("No child states remaining");
+		}
+		next.start();
 	}
 }
