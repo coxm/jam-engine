@@ -22,16 +22,20 @@ type CategoryHandlers = Map<string, HandlerInfo>;
 
 
 interface HandlerInfo {
+	cat: any;
 	/** The handler function. */
 	fn: Handler<any, any>;
 	/** The handler context. */
 	ctx: any;
 	/** The handler identifier. */
 	id: string;
-	/** Whether this handler is active. */
-	on: boolean;
 	/** A numerical limit on the number of times this handler can be called. */
 	max: number;
+}
+
+
+interface BatchedHandlerInfo extends HandlerInfo {
+	bat: symbol;
 }
 
 
@@ -40,12 +44,48 @@ export interface ManagerOptions<Category, Data> {
 }
 
 
+export interface BatchOptionsBase {
+	name?: string;
+	limit?: number;
+}
+
+
+export interface HasSingleContext {
+	context: any;
+}
+
+
+export interface HasMultipleContexts {
+	contexts: any;
+}
+
+
+export type BatchOptions = BatchOptionsBase & (
+	HasSingleContext | HasMultipleContexts
+);
+
+
 export class Manager<Category, Data> {
-	private handlers: Map<Category, CategoryHandlers> = new Map();
+	/**
+	 * The event handlers, in a Category -> CategoryHandlers map.
+	 *
+	 * Access an event handler via `handlers.get(category).get(hash)`, where
+	 * `hash` is the combined hash of the handler and its context.
+	 */
+	private handlers: Map<Category, CategoryHandlers>;
+
+	/**
+	 * Related handlers, batched together by a unique symbol.
+	 *
+	 * @see {@link Manager#batch}.
+	 */
+	private batches: Map<symbol, HandlerInfo[]>;
 
 	private metadata: (category: Category, data: Data) => any;
 
 	constructor(options?: ManagerOptions<Category, Data>) {
+		this.handlers = new Map();
+		this.batches = new Map();
 		this.metadata = (options && options.metadata) || noop;
 	}
 
@@ -55,29 +95,18 @@ export class Manager<Category, Data> {
 	 * @param category - the category of events to listen to.
 	 * @param handler - the event handler.
 	 * @param context - the optional context for the handler to be called with.
-	 * @param limit - the maximum number of times to call the handler.
+	 * @param limit - the maximum number of times to call the handler; defaults
+	 * to `Infinity`.
 	 */
 	on(
 		category: Category,
 		handler: Handler<Category, Data>,
 		context?: any,
-		limit: number = Infinity
+		limit?: number
 	)
 		: this
 	{
-		let handlers: CategoryHandlers|undefined = this.handlers.get(category);
-		if (!handlers) {
-			this.handlers.set(category, handlers = new Map());
-		}
-
-		const id: string = hashCombine(handler, context);
-		(<CategoryHandlers> handlers).set(id, {
-			fn: handler,
-			ctx: context,
-			id: id,
-			on: true,
-			max: limit
-		});
+		this.addHandler(category, handler, context, limit);
 		return this;
 	}
 
@@ -110,6 +139,76 @@ export class Manager<Category, Data> {
 			(<CategoryHandlers> handlers).delete(
 				hashCombine(handler, context)
 			);
+		}
+		return this;
+	}
+
+	/**
+	 * Add a batch of event handlers.
+	 *
+	 * The handlers involved can be removed individually or in one operation.
+	 * @see {@link Manager#unbatch}.
+	 *
+	 * @param items - the categories and corresponding handlers.
+	 * @param options - options for configuring the batch.
+	 * @returns a unique ID for the batch, which can be used to remove all
+	 * handlers involved.
+	 */
+	batch(
+		items: [Category, Handler<Category, Data>][],
+		options?: BatchOptions
+	)
+		: symbol
+	{
+		let getContext: (i: number) => any;
+		if (options === undefined) {
+			options = <BatchOptions> {};
+			getContext = (i: number): any => null;
+		}
+		else if (options.hasOwnProperty('context')) {
+			console.assert(
+				(<HasMultipleContexts> options).contexts === undefined,
+				"Batch request has 'context' and 'contexts' properties"
+			);
+			getContext = (i: number): any =>
+				(<HasSingleContext> options).context;
+		}
+		else if (options.hasOwnProperty('contexts')) {
+			getContext = (i: number): any =>
+				(<HasMultipleContexts> options).contexts[i];
+		}
+
+		const batchID: symbol = Symbol(options!.name);
+		const batched: HandlerInfo[] = items.map((
+			a: [Category, Handler<Category, Data>],
+			i: number
+		)
+			: HandlerInfo =>
+		{
+			const info = <BatchedHandlerInfo> this.addHandler(
+				a[0],
+				a[1],
+				getContext(i),
+				options!.limit
+			);
+			info.bat = batchID;
+			return info;
+		});
+		this.batches.set(batchID, batched);
+		return batchID
+	}
+
+	/**
+	 * Remove all handlers within a batch.
+	 *
+	 * @param id - the ID returned when the batch was created.
+	 */
+	unbatch(id: symbol): this {
+		const batched: HandlerInfo[] | undefined = this.batches.get(id);
+		if (batched !== undefined) {
+			for (let info of batched) {
+				this.off(info.cat, info.fn, info.ctx);
+			}
 		}
 		return this;
 	}
@@ -149,5 +248,29 @@ export class Manager<Category, Data> {
 			res = iter.next();
 		}
 		return this;
+	}
+
+	private addHandler(
+		category: Category,
+		handler: Handler<Category, Data>,
+		context?: any,
+		limit?: number
+	)
+		:	HandlerInfo
+	{
+		let handlers: CategoryHandlers|undefined = this.handlers.get(category);
+		if (!handlers) {
+			this.handlers.set(category, handlers = new Map());
+		}
+		const id: string = hashCombine(handler, context);
+		const info: HandlerInfo = {
+			cat: category,
+			fn: handler,
+			ctx: context,
+			id: id,
+			max: typeof limit === 'number' ? limit : Infinity,
+		};
+		(<CategoryHandlers> handlers).set(id, info);
+		return info;
 	}
 }
