@@ -1,34 +1,48 @@
-export class Scheduler {
+export type SchedulerState<StartValue, StopValue> = (
+	{running: true; startResult: StartValue;} |
+	{running: false; stopResult: StopValue;}
+);
+
+
+export class Scheduler<StartValue, StopValue> {
 	constructor(
-		private starter: (current: T) => T,
-		private stopper: (current: T) => T,
-		private current: T = <T> null,
-		private running: boolean = false
+		private starter: (current: StopValue) => StartValue,
+		private stopper: (current: StartValue) => StopValue,
+		private prevStartValue: StartValue,
+		private prevStopValue: StopValue,
+		private running: boolean = false,
 	) {
 		if (running) {
-			starter(current);
+			starter(prevStopValue);
 		}
 	}
 
 	start(): void {
 		if (!this.running) {
-			this.current = this.starter(this.current);
+			this.prevStartValue = this.starter(this.prevStopValue);
 			this.running = true;
 		}
 	}
 
 	stop(): void {
 		if (this.running) {
-			this.current = this.stopper(this.current);
+			this.prevStopValue = this.stopper(this.prevStartValue);
 			this.running = false;
 		}
+	}
+
+	state(): SchedulerState<StartValue, StopValue> {
+		return (this.running
+			?	{running: true, startResult: this.prevStartValue}
+			:	{running: false, stopResult: this.prevStopValue}
+		);
 	}
 
 	isRunning(): boolean {
 		return this.running;
 	}
 
-	value(): T {
-		return this.current;
+	value(): StartValue | StopValue {
+		return this.running ? this.prevStartValue : this.prevStopValue;
 	}
 }
