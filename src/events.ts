@@ -225,7 +225,7 @@ export class Manager<Category, Data> {
 	 * @param category - the event category.
 	 * @param ev - the event to fire.
 	 */
-	fire(category: Category, data: Data): this {
+	fire<EventData extends Data>(category: Category, data: EventData): this {
 		const handlers: CategoryHandlers|undefined =
 			this.handlers.get(category);
 
@@ -233,7 +233,7 @@ export class Manager<Category, Data> {
 			return this;
 		}
 
-		const ev: Event<Category, Data> = {
+		const ev: Event<Category, EventData> = {
 			category: category,
 			data: data,
 			meta: this.metadata(category, data)
