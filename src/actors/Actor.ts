@@ -18,6 +18,27 @@ export interface Component {
 }
 
 
+/**
+ * Optional base class for components.
+ *
+ * Extending `ComponentBase` is not required, but can be useful if not defining
+ * `onAdd` and `onRemove` methods.
+ */
+export class ComponentBase {
+	public readonly actorID: symbol;
+
+	constructor(actorID: symbol) {
+		this.actorID = actorID;
+	}
+
+	onAdd(actor: Actor): void {
+	}
+
+	onRemove(actor: Actor): void {
+	}
+}
+
+
 export interface ActorDef {
 	alias?: string;
 	schema?: string;
