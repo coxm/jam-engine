@@ -150,15 +150,15 @@ export class State {
 	}
 
 	child(name: string): State {
-		const state: State|undefined = this.childStates.find(
-			(c: State): boolean => c.name === name
-		);
-
+		const state: State|undefined = this.childIfExists(name);
 		if (!state) {
 			throw new Error("No such child state: " + name);
 		}
-
 		return state;
+	}
+
+	childIfExists(name: string): State|undefined {
+		return this.childStates.find((c: State): boolean => c.name === name);
 	}
 
 	addChild(child: State): void {
