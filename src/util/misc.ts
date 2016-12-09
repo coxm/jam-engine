@@ -37,3 +37,13 @@ export function randIntInRange(min: number, max: number): number {
 export function clamp(x: number, min: number, max: number): number {
 	return Math.max(min, Math.min(x, max));
 }
+
+
+export function realOr(x: any, ifNot: number): number {
+	return isReal(x) ? x : ifNot;
+}
+
+
+export function intOr(x: any, ifNot: number): number {
+	return isInt(x) ? x : ifNot;
+}
