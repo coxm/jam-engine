@@ -1,29 +1,14 @@
+ts_compiler_bin=./node_modules/typescript/bin/tsc
+karma_bin=./node_modules/karma/bin/karma
+
+
+build_dir=build
+
 lib_src_dir=src
-lib_build_dir=build/js
+lib_build_dir=$(build_dir)/js
 
 test_src_dir=test
-test_build_dir=build/test
-
-ts_compiler_options+=--outDir $(lib_build_dir)
-ts_compiler_options+=--target es5
-ts_compiler_options+=--lib es7,dom
-ts_compiler_options+=--declaration
-ts_compiler_options+=--experimentalDecorators
-ts_compiler_options+=--forceConsistentCasingInFileNames
-ts_compiler_options+=--noFallthroughCasesInSwitch
-ts_compiler_options+=--noImplicitAny
-ts_compiler_options+=--noImplicitThis
-ts_compiler_options+=--noImplicitUseStrict
-ts_compiler_options+=--noUnusedLocals
-# ts_compiler_options+=--noUnusedParameters
-ts_compiler_options+=--strictNullChecks
-ts_compiler_options+=--noImplicitReturns
-ts_compiler_options+=--noEmitOnError
-ts_compiler_options+=--module umd
-ts_compiler_options+=--newLine LF
-ts_compiler_options+=--pretty
-
-ts_compiler_bin=./node_modules/typescript/bin/tsc
+test_build_dir=$(build_dir)/test
 
 
 lib_sources=$(shell find $(lib_src_dir) -type f -wholename "*.ts")
@@ -37,32 +22,49 @@ test_sources+=typings/index.d.ts
 typings_bin=node_modules/typings/dist/bin.js
 
 
-define tsc_compile
-$(ts_compiler_bin) $(ts_compiler_options)
+define karma_start
+$(karma_bin) start config/karma.conf.js
 endef
 
 
-$(lib_build_dir)/%.js: $(lib_src_dir)/%.ts
-	$(tsc_compile)
-
-
-$(test_build_dir)/%.js: $(test_src_dir)/%.ts
-	$(tsc_compile)
-
-
 .PHONY: all
-all:
-	$(tsc_compile) $(lib_sources)
+all: js tests
+	
+
+
+.PHONY: js
+js:
+	$(ts_compiler_bin) -p config/lib.tsconfig.json
 
 
 .PHONY: tests
 tests:
-	$(tsc_compile) $(test_sources)
+	$(ts_compiler_bin) -p config/tests.tsconfig.json
+
+
+.PHONY: test
+test:
+	$(karma_start) --single-run=true
+
+
+.PHONY: test-server
+test-server:
+	$(karma_start) --single-run=false
+
+
+.PHONY: coverage
+coverage: $(build_dir)/coverage/html/index.html
+	
+
+
+$(build_dir)/coverage/html/index.html:
+	mkdir -p "$(build_dir)/coverage"
+	$(karma_start) --single-run=true --reporters=coverage
 
 
 .PHONY: clean
 clean:
-	rm -r $(lib_build_dir)
+	rm -r $(build_dir)
 
 
 .PHONY: typings-install

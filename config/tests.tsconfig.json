@@ -1,0 +1,37 @@
+{
+	"compilerOptions": {
+		"baseUrl": "..",
+		"outDir": "../build/test",
+		"target": "es6",
+		"lib": ["es2015", "es7", "dom"],
+		"module": "system",
+		"moduleResolution": "node",
+		"sourceMap": false,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"forceConsistentCasingInFileNames": true,
+		"noFallthroughCasesInSwitch": false,
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"noImplicitUseStrict": true,
+		"noUnusedLocals": true,
+		"strictNullChecks": true,
+		"noImplicitReturns": true,
+		"noEmitOnError": false,
+		"module": "system",
+		"newLine": "LF",
+		"pretty": true,
+		"removeComments": false,
+		"preserveConstEnums": true,
+		"declaration": false,
+		"paths": {
+			"jam/*": ["build/js/*"]
+		}
+	},
+	"include": [
+		"../test/**/*.ts"
+	],
+	"files": [
+		"../typings/globals/jasmine/index.d.ts"
+	]
+}
