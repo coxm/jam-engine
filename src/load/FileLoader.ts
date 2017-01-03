@@ -4,6 +4,7 @@ export const parseJSON = JSON.parse.bind(JSON);
 export interface FileLoaderOptions {
 	baseUrl: string;
 	cache: Map<string, any> | boolean;
+	suffix?: string;
 }
 
 
@@ -13,6 +14,7 @@ export interface FileLoaderOptions {
 export class FileLoader {
 	readonly baseUrl: string;
 	readonly cache: Map<string, any> | null;
+	readonly suffix: string;
 
 	/**
 	 * Construct a FileLoader.
@@ -35,6 +37,10 @@ export class FileLoader {
 			default:
 				this.cache = options.cache;
 		}
+		this.suffix = (typeof options.suffix === 'string'
+			? options.suffix
+			: '!text.js'
+		);
 	}
 
 	/** Make a relative path absolute, using this loader's base URL. */
@@ -48,7 +54,7 @@ export class FileLoader {
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
 	text(relpath: string): Promise<string> {
-		return this.file(relpath + '!text.js');
+		return this.file(relpath + this.suffix);
 	}
 
 	/**
@@ -57,16 +63,16 @@ export class FileLoader {
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
 	json<T>(relpath: string): Promise<T> {
-		return this.file(relpath + '!text.js', parseJSON);
+		return this.file(relpath + this.suffix, parseJSON);
 	}
 
 	/**
 	 * Get the key for caching a file under.
 	 *
-	 * Strips any SystemJS plugin extensions (e.g. `'!text.js'`).
+	 * Strips the suffix if found.
 	 */
 	protected cacheKey(abspath: string): string {
-		return abspath.replace(/![a-z]+\.[a-z]+/, '');
+		return abspath.replace(new RegExp(this.suffix + '$'), '');
 	}
 
 	/**
