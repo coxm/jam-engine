@@ -28,6 +28,9 @@
 			"jam/*": ["src"]
 		}
 	},
+	"files": [
+		"../typings/globals/pixi.js/index.d.ts"
+	],
 	"include": [
 		"../src/**/*.ts"
 	]
