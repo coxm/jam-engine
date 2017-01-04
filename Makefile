@@ -57,8 +57,8 @@ coverage: $(build_dir)/coverage/html/index.html
 	
 
 
-$(build_dir)/coverage/html/index.html:
-	mkdir -p "$(build_dir)/coverage"
+$(build_dir)/coverage/html/index.html: $(test_outputs)
+	mkdir -p "$(@D)"
 	$(karma_start) --single-run=true --reporters=coverage
 
 
