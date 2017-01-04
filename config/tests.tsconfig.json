@@ -17,7 +17,7 @@
 		"noUnusedLocals": true,
 		"strictNullChecks": true,
 		"noImplicitReturns": true,
-		"noEmitOnError": false,
+		"noEmitOnError": true,
 		"module": "system",
 		"newLine": "LF",
 		"pretty": true,
@@ -32,6 +32,7 @@
 		"../test/**/*.ts"
 	],
 	"files": [
-		"../typings/globals/jasmine/index.d.ts"
+		"../typings/globals/jasmine/index.d.ts",
+		"../defs/lib.d.ts"
 	]
 }
