@@ -122,6 +122,10 @@ describe("cache decorator", (): void => {
 			expect(dummy.storeGetter(1, 2)).toBe(result);
 			expect(dummy.uncached).not.toHaveBeenCalled();
 		});
+		it("doesn't modify the target's prototype", (): void => {
+			dummy.storeGetter(1, 2);
+			expect(Dummy.prototype.storeGetter_cache).not.toBeDefined();
+		});
 	});
 
 	describe("(store property name)", (): void => {
