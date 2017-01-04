@@ -25,7 +25,7 @@
 		"preserveConstEnums": true,
 		"declaration": true,
 		"paths": {
-			"jam/*": ["src"]
+			"jam/*": ["src/*"]
 		}
 	},
 	"files": [
