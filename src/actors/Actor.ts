@@ -140,33 +140,62 @@ export function mergeActorDefs(
 
 
 export class Actor {
-	cmp: { [key: string]: Component; } = {};
+	readonly cmp: { [key: string]: Component; } = {};
 	readonly alias: string|undefined;
 	readonly id: symbol;
+
 	private initialised: { [id: string]: boolean; } = {};
 
+	/**
+	 * Construct an Actor.
+	 *
+	 * @param id the actor's ID.
+	 * @param def the definition this Actor was constructed with.
+	 * @param cmp the components dict.
+	 * @param init (default: `true`) whether to initialise the Actor.
+	 */
 	constructor(
 		id: symbol,
 		def: ActorDef,
 		cmp: { [id: string]: Component; },
-		init: boolean
+		init?: boolean
 	) {
-		this.alias = def.alias;
-		this.id = id || Symbol(this.alias);
 		this.cmp = cmp || {};
+		this.alias = def.alias;
+		this.id = id;
 		if (init !== false) {
 			this.init();
 		}
 	}
 
-	setCmp(cmp: Component, init: boolean): void {
-		this.cmp[cmp.key] = cmp;
-		if (init !== false) {
+	/**
+	 * Set a particular component on this Actor.
+	 *
+	 * @param cmp the component to set.
+	 * @param init whether to initialise the component.
+	 * @throws Error if a component of the same key already exists.
+	 */
+	setCmp(cmp: Component, init: boolean = true): void {
+		const key = cmp.key;
+		if (this.cmp[key]) {
+			throw new Error("Component exists: " + key);
+		}
+
+		if (init) {
 			cmp.onAdd(this);
 		}
+		this.cmp[key] = cmp;
+		this.initialised[key] = init;
 	}
 
-	removeCmp(key: string): void {
+	/**
+	 * Remove a particular component from this Actor.
+	 *
+	 * Calls the component's `onRemove` method first.
+	 *
+	 * @param key the key under which the component is stored.
+	 */
+	deleteCmp(key: string): void {
 		if (this.initialised[key]) {
 			this.cmp[key].onRemove(this);
 		}
@@ -174,6 +203,12 @@ export class Actor {
 		delete this.initialised[key];
 	}
 
+	/**
+	 * Call the `onAdd` method of every component.
+	 *
+	 * Components which have already been initialised in this way will not be
+	 * re-initialised.
+	 */
 	init(): void {
 		for (let key in this.cmp) {
 			if (!this.initialised[key]) {
@@ -183,6 +218,7 @@ export class Actor {
 		}
 	}
 
+	/** Un-initialise all components by calling their `onRemove` methods. */
 	deinit(): void {
 		for (let key in this.cmp) {
 			if (this.initialised[key]) {
@@ -192,9 +228,15 @@ export class Actor {
 		}
 	}
 
+	/** Check if a particular component has been initialised. */
+	isInitialised(key: string): boolean {
+		return !!this.initialised[key];
+	}
+
+	/** Destroy this Actor, resetting the component dict. */
 	destroy(): void {
 		this.deinit();
-		this.cmp = {};
+		(<any> this).cmp = {};
 		this.initialised = {};
 	}
 }

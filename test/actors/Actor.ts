@@ -1,4 +1,10 @@
-import {mergeActorDefs, ActorDef, PartialActorDef} from 'jam/actors/Actor';
+import {
+	Component,
+	mergeActorDefs,
+	ActorDef,
+	PartialActorDef,
+	Actor,
+} from 'jam/actors/Actor';
 
 
 describe("mergeActorDefs", (): void => {
@@ -57,9 +63,163 @@ describe("mergeActorDefs", (): void => {
 
 
 describe("Actor", (): void => {
-	"setCmp"
-	"removeCmp"
-	"init"
-	"deinit"
-	"destroy"
+	const actorID = Symbol('actor-id');
+
+	describe("constructor", (): void => {
+		let def: ActorDef = <any> null;
+
+		beforeEach((): void => {
+			def = {cmp: [], position: [0, 0]};
+		});
+
+		it("sets basic properties", (): void => {
+			const cmp = {};
+			const actor = new Actor(actorID, def, cmp, false);
+			expect(actor.id).toBe(actorID);
+			expect(actor.cmp).toBe(cmp);
+		});
+		it("initialises if init is omitted or true", (): void => {
+			spyOn(Actor.prototype, 'init');
+			const actor = new Actor(actorID, def, {});
+			expect(actor.init).toHaveBeenCalled();
+		});
+		it("doesn't initialise if init is false", (): void => {
+			spyOn(Actor.prototype, 'init');
+			const actor = new Actor(actorID, def, {}, false);
+			expect(actor.init).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("method", (): void => {
+		let actor: Actor = <any> null;
+		const cmpKey: string = 'test-cmp';
+
+		beforeEach((): void => {
+			actor = new Actor(actorID, {cmp: [], position: [0, 0]}, {});
+		});
+
+		function component(key: string = cmpKey): Component {
+			return {
+				key: key,
+				onAdd(): void {
+				},
+				onRemove(): void {
+				},
+			};
+		}
+
+		describe("setCmp", (): void => {
+			let cmp: Component = <any> null;
+
+			beforeEach((): void => {
+				cmp = component();
+			});
+
+			it("sets a component", (): void => {
+				actor.setCmp(cmp);
+				expect(actor.cmp[cmpKey]).toBe(cmp);
+			});
+
+			describe("is exception safe:", (): void => {
+				it("does nothing if onAdd throws", (): void => {
+					const old: Component = component();
+					spyOn(cmp, 'onAdd').and.throwError('cmp.onAdd');
+					actor.setCmp(old);
+					try {
+						actor.setCmp(cmp);
+					}
+					catch(err) {
+					}
+					expect(actor.cmp[cmpKey]).toBe(old);
+					expect(actor.isInitialised(cmpKey)).toBe(true);
+					expect(cmp.onAdd).not.toHaveBeenCalled();
+				});
+			});
+		});
+
+		describe("deleteCmp", (): void => {
+			let cmp: Component = <any> null;
+
+			beforeEach((): void => {
+				cmp = component();
+				actor.setCmp(cmp);
+			});
+
+			it("calls the component's onRemove method", (): void => {
+				spyOn(cmp, 'onRemove');
+				actor.deleteCmp(cmpKey);
+				expect(cmp.onRemove).toHaveBeenCalledWith(actor);
+			});
+
+			describe("is exception safe:", (): void => {
+				it("does nothing if onRemove fails", (): void => {
+					spyOn(cmp, 'onRemove').and.throwError('cmp.onRemove');
+					try {
+						actor.deleteCmp(cmpKey);
+					}
+					catch(err) {
+					}
+					expect(actor.cmp[cmpKey]).toBe(cmp);
+					expect(actor.isInitialised(cmpKey)).toBe(true);
+				});
+			});
+		});
+
+		describe("", (): void => {
+			const uninitialisedKey: string = 'other-cmp';
+			let initialised: Component = <any> null;
+			let uninitialised: Component = <any> null;
+
+			beforeEach((): void => {
+				initialised = component();
+				actor.setCmp(initialised);
+
+				uninitialised = component(uninitialisedKey);
+				actor.setCmp(uninitialised, false);
+			});
+
+			it("(sanity check)", (): void => {
+				expect(actor.isInitialised(initialised.key)).toBe(true);
+				expect(actor.isInitialised(uninitialised.key)).toBe(false);
+			});
+
+			describe("init", (): void => {
+				it("ensures all components are initialised", (): void => {
+					actor.init();
+					expect(actor.isInitialised(initialised.key)).toBe(true);
+					expect(actor.isInitialised(uninitialised.key)).toBe(true);
+				});
+				it("doesn't re-initialise components", (): void => {
+					spyOn(initialised, 'onAdd');
+					actor.init();
+					expect(initialised.onAdd).not.toHaveBeenCalled();
+				});
+			});
+
+			describe("deinit", (): void => {
+				it("ensures all components are removed", (): void => {
+					actor.deinit();
+					expect(actor.isInitialised(initialised.key)).toBe(false);
+					expect(actor.isInitialised(uninitialised.key)).toBe(false);
+				});
+				it("doesn't re-remove components", (): void => {
+					spyOn(uninitialised, 'onRemove');
+					actor.deinit();
+					expect(uninitialised.onRemove).not.toHaveBeenCalled();
+				});
+			});
+		});
+
+		describe("destroy", (): void => {
+			it("de-inits all components", (): void => {
+				spyOn(actor, 'deinit');
+				actor.destroy();
+				expect(actor.deinit).toHaveBeenCalled();
+			});
+			it("deletes all components", (): void => {
+				actor.destroy();
+				expect(Object.keys(actor.cmp).length).toBe(0);
+			});
+		});
+	});
 });
