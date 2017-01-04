@@ -80,7 +80,7 @@ export interface ActorDef {
  * const def = mergeActorDefs([
  *     { // Top-level actor definition.
  *         cmp: [{factory: 'Factory3'}],
- *         depends: ['DefB', 'DefC'],
+ *         depends: ['DefB'],
  *     },
  *     { // Required by first definition but requires the next one.
  *         alias: 'DefB',

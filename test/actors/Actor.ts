@@ -26,7 +26,7 @@ describe("mergeActorDefs", (): void => {
 			defs = [
 				{ // Top-level actor definition.
 					cmp: [{factory: 'Factory3'}],
-					depends: ['DefB', 'DefC'],
+					depends: ['DefB'],
 					position: [1, 1],
 				},
 				{ // Required by first definition but requires the next one.
@@ -49,7 +49,7 @@ describe("mergeActorDefs", (): void => {
 			expect(def.position).toEqual([1, 1]);
 		});
 		it("concatenating `depends` (including duplicates)", (): void => {
-			expect(def.depends).toEqual(['DefB', 'DefC', 'DefC']);
+			expect(def.depends).toEqual(['DefB', 'DefC']);
 		});
 		it("adding components in order of requirement", (): void => {
 			expect(def.cmp).toEqual([
