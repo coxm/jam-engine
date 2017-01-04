@@ -10,7 +10,7 @@ export function identity<T>(t: T): T {
 
 
 export function isReal(x: number): boolean {
-	return x === +x;
+	return x === +x && Math.abs(x) < Infinity;;
 }
 
 
@@ -46,4 +46,9 @@ export function realOr(x: any, ifNot: number): number {
 
 export function intOr(x: any, ifNot: number): number {
 	return isInt(x) ? x : ifNot;
+}
+
+
+export function collect<T>(array: T[][]): T[] {
+	return Array.prototype.concat.apply([], array);
 }
