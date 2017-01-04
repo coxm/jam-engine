@@ -37,9 +37,9 @@ class Dummy {
 
 	/** Use a custom store getter to set the store. */
 	@cache(
-		(target: any, propKey: string): Store => (
-			target[propKey + '_cache'] = store
-		),
+		function(this: Dummy, target: any, propKey: string): Store {
+			return (<any> this)[propKey + '_cache'] = store;
+		},
 		hyphenateArgs
 	)
 	storeGetter(a: number, b: number): {value: number;} {
@@ -101,8 +101,13 @@ describe("cache decorator", (): void => {
 	});
 
 	describe("(store getter)", (): void => {
-		it("can modify the target", (): void => {
+		it("can modify the owner", (): void => {
+			dummy.storeGetter(1, 2);
 			expect(dummy.storeGetter_cache).toBe(store);
+		});
+		it("doesn't modify the target's prototype", (): void => {
+			dummy.storeGetter(1, 2);
+			expect(Dummy.prototype.storeGetter_cache).not.toBeDefined();
 		});
 		it("returns the expected result", (): void => {
 			expect(dummy.storeGetter(1, 2)).toEqual({value: 3});
@@ -120,18 +125,11 @@ describe("cache decorator", (): void => {
 	});
 
 	describe("(store property name)", (): void => {
-		it("initialises the store when decorator is called", (): void => {
-			expect(dummy.storePropertyName_cache instanceof Map).toBe(true);
-		});
-
-		describe("uses the existing property", (): void => {
-			beforeEach((): void => {
-				dummy.storePropertyName_cache = store;
-			});
-			it("if set", (): void => {
-			});
+		it("does not initialise the store until called", (): void => {
+			expect(dummy.storePropertyName_cache).toBe(undefined);
 		});
 		it("creates the store if it doesn't exist", (): void => {
+			dummy.storePropertyName(1, 2);
 			expect(dummy.storePropertyName_cache instanceof Map).toBe(true);
 		});
 		it("returns the expected result", (): void => {
@@ -145,9 +143,26 @@ describe("cache decorator", (): void => {
 		});
 		it("uses results from the store if possible", (): void => {
 			const result = {value: 42};
-			dummy.storePropertyName_cache.set('1-2', result);
+			dummy.storePropertyName_cache =  new Map([['1-2', result]]);
 			expect(dummy.storePropertyName(1, 2)).toBe(result);
 			expect(dummy.uncached).not.toHaveBeenCalled();
+		});
+		it("doesn't modify the target's prototype", (): void => {
+			dummy.storePropertyName(1, 2);
+			expect(Dummy.prototype.storePropertyName_cache).not.toBeDefined();
+		});
+
+		describe("uses the existing store", (): void => {
+			let newStore: Map<any, any> = <any> null;
+
+			beforeEach((): void => {
+				dummy.storePropertyName_cache = newStore = new Map();
+			});
+
+			it("if set", (): void => {
+				dummy.storePropertyName(1, 2);
+				expect(newStore.get('1-2')).toEqual({value: 3});
+			});
 		});
 	});
 });

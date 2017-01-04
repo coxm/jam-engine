@@ -20,14 +20,21 @@ export type AnyKeyGetter = (
 
 
 export interface StoreGetter {
-	(target: any, propKey: string, desc: PropertyDescriptor): Map<any, any>;
+	(
+		this: any,
+		target: any,
+		propKey: string,
+		desc: PropertyDescriptor
+	): Map<any, any>;
 }
 
 
 export type AnyStoreArg = (
 	Map<any, any> |
 	StoreGetter |
-	string
+	string |
+	number |
+	symbol
 );
 
 
@@ -61,24 +68,27 @@ export function cache(store: AnyStoreArg, keyGetter: AnyKeyGetter)
 				}
 		);
 
-		let theStore: Map<any, any>;
+		let getStore: StoreGetter;
 		switch (typeof store) {
 			case 'object':
-				theStore = <Map<any, any>> store;
+				getStore = () => <Map<any, any>> store;
 				break;
 			case 'function':
-				theStore = (<StoreGetter> store)(target, propKey, desc);
+				getStore = <StoreGetter> store;
 				break;
 			default:
-				theStore = target[<string> store] || (
-					target[<string> store] = new Map()
-				);
+				getStore = function(this: any): Map<any, any> {
+					return this[<string> store] || (
+						this[<string> store] = new Map()
+					);
+				};
 				break;
 		}
 
 		const original: Function = desc.value;
 		desc.value = function cacheWrapper(this: any): any {
 			const key: any = getKey.call(this, arguments);
+			const theStore = getStore.call(this, target, propKey, desc);
 			for (let [k, v] of theStore.entries()) {
 				if (k === key) {
 					return v;

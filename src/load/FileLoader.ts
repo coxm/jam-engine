@@ -58,9 +58,9 @@ export class FileLoader {
 
 
 /** Get the default cache for a file loader. */
-export function getDefaultCache(target: FileLoader): Map<string, any> {
-	return (<any> target).cache || (
-		(<any> target).cache = new Map<string, any>()
+export function getDefaultCache(this: FileLoader): Map<string, any> {
+	return (<any> this).cache || (
+		(<any> this).cache = new Map<string, any>()
 	);
 }
 
@@ -68,21 +68,20 @@ export function getDefaultCache(target: FileLoader): Map<string, any> {
 /**
  * A decorator for caching file load requests.
  *
- * Example usage:
- *
- *     class CachedLoader extends FileLoader {
- *         readonly cache: Map<string, any>;
- *         @cache
- *         text(relpath: string): string {
- *             return super.text(relpath);
- *         }
+ * @example
+ * class CachedLoader extends FileLoader {
+ *     readonly cache: Map<string, any>;
+ *     @cache
+ *     text(relpath: string): string {
+ *         return super.text(relpath);
  *     }
- *     const loader = new CachedLoader({baseUrl: '/base'});
- *     expect(
- *         loader.text('/base/file.txt')
- *     ).toBe(
- *         loader.cache('text:/base/file.txt')  // Note the method and path.
- *     );
+ * }
+ * const loader = new CachedLoader({baseUrl: '/base'});
+ * expect(
+ *     loader.text('/base/file.txt')
+ * ).toBe(
+ *     loader.cache('text:/base/file.txt')  // Note the method and path.
+ * );
  */
 export const cacheUnderTypeAndFullPath = cache(
 	getDefaultCache,
@@ -103,21 +102,20 @@ export const cacheUnderTypeAndFullPath = cache(
 /**
  * A decorator for caching file load requests.
  *
- * Example usage:
- *
- *     class CachedLoader extends FileLoader {
- *         readonly cache: Map<string, any>;
- *         @cache
- *         text(relpath: string): string {
- *             return super.text(relpath);
- *         }
+ * @example
+ * class CachedLoader extends FileLoader {
+ *     readonly cache: Map<string, any>;
+ *     @cache
+ *     text(relpath: string): string {
+ *         return super.text(relpath);
  *     }
- *     const loader = new CachedLoader({baseUrl: '/base'});
- *     expect(
- *         loader.text('/base/file.txt')
- *     ).toBe(
- *         loader.cache('/base/file.txt')  // Note the full path.
- *     );
+ * }
+ * const loader = new CachedLoader({baseUrl: '/base'});
+ * expect(
+ *     loader.text('/base/file.txt')
+ * ).toBe(
+ *     loader.cache('/base/file.txt')  // Note the full path.
+ * );
  */
 export const cacheUnderFullPath = cache(
 	getDefaultCache,
