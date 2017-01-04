@@ -1,12 +1,52 @@
-import {FileLoader} from 'jam/load/FileLoader';
+import {
+	FileLoader,
+	cacheUnderFullPath,
+	cacheUnderTypeAndFullPath,
+}
+from 'jam/load/FileLoader';
 
 
 const baseUrl: string = 'test-base-url';
 
 
+interface CachingFileLoader extends FileLoader {
+	readonly cache: Map<string, any>;
+}
+
+
+class FullPathCachingFileLoader extends FileLoader {
+	readonly cache: Map<string, any>;
+
+	@cacheUnderFullPath
+	text(relpath: string): Promise<string> {
+		return super.text(relpath);
+	}
+
+	@cacheUnderFullPath
+	json(relpath: string): Promise<string> {
+		return super.json(relpath);
+	}
+}
+
+
+class TypeAndFullPathCachingFileLoader extends FileLoader {
+	readonly cache: Map<string, any>;
+
+	@cacheUnderTypeAndFullPath
+	text(relpath: string): Promise<string> {
+		return super.text(relpath);
+	}
+
+	@cacheUnderTypeAndFullPath
+	json(relpath: string): Promise<string> {
+		return super.json(relpath);
+	}
+}
+
+
 function testFileLoader(testName: string, options: {
 	loader: () => FileLoader;
-	testCaching: boolean;
+	cachePrefix: undefined | boolean
 })
 	: void
 {
@@ -50,14 +90,7 @@ function testFileLoader(testName: string, options: {
 				);
 			});
 
-			if (options.testCaching) {
-				it("caching the results", () => {
-					const promise = loader.text(basename);
-					expect(loader.cache).toBeTruthy();
-					expect(loader.cache!.get(filename)).toBe(promise);
-				});
-			}
-			else {
+			if (options.cachePrefix === undefined) {
 				it("without caching the results", (done): void => {
 					const p = loader.text(basename);
 					const q = loader.text(basename);
@@ -67,6 +100,18 @@ function testFileLoader(testName: string, options: {
 						expect(a).toBe(b);
 						done();
 					});
+				});
+			}
+			else {
+				it("caching the results", () => {
+					const promise = loader.text(basename);
+					const cache = (<CachingFileLoader> loader).cache;
+					const key = (options.cachePrefix
+						?	'text:' + filename
+						:	filename
+					);
+					expect(cache).toBeTruthy();
+					expect(cache!.get(key)).toBe(promise);
 				});
 			}
 		});
@@ -104,24 +149,29 @@ function testFileLoader(testName: string, options: {
 				);
 			});
 
-			if (options.testCaching) {
-				it("caching the results", () => {
-					const promise = loader.json(basename);
-					expect(loader.cache).toBeTruthy();
-					expect(loader.cache!.get(filename)).toBe(promise);
-				});
-			}
-			else {
+			if (options.cachePrefix === undefined) {
 				it("without caching the results", (done): void => {
 					const p = loader.json(basename);
 					const q = loader.json(basename);
 					expect(p).not.toBe(q);
 					expect(System.import).toHaveBeenCalledTimes(2);
 					Promise.all([p, q]).then(([a, b]): void => {
-						expect(a).not.toBe(b);
 						expect(a).toEqual(b);
+						expect(a).not.toBe(b);
 						done();
 					});
+				});
+			}
+			else {
+				it("caching the results", () => {
+					const promise = loader.json(basename);
+					const cache = (<CachingFileLoader> loader).cache;
+					const key = (options.cachePrefix
+						?	'json:' + filename
+						:	filename
+					);
+					expect(cache).toBeTruthy();
+					expect(cache!.get(key)).toBe(promise);
 				});
 			}
 		});
@@ -130,27 +180,32 @@ function testFileLoader(testName: string, options: {
 
 
 describe("FileLoader", (): void => {
-	testFileLoader("initialised with specific cache", {
-		loader: (): FileLoader => new FileLoader({
+	testFileLoader("initialised without suffix", {
+		loader: () => new FileLoader({
 			baseUrl: baseUrl,
-			cache: new Map<string, any>(),
 		}),
-		testCaching: true,
+		cachePrefix: undefined,
 	});
 
-	testFileLoader("initialised with caching enabled", {
-		loader: (): FileLoader => new FileLoader({
+	testFileLoader("initialised with '!text.js' suffix", {
+		loader: () => new FileLoader({
 			baseUrl: baseUrl,
-			cache: true,
+			suffix: '!text.js',
 		}),
-		testCaching: true,
+		cachePrefix: undefined,
 	});
 
-	testFileLoader("initialised with caching disabled", {
-		loader: (): FileLoader => new FileLoader({
+	testFileLoader("when caching under full path (old behaviour)", {
+		loader: () => new FullPathCachingFileLoader({
 			baseUrl: baseUrl,
-			cache: false,
 		}),
-		testCaching: false,
+		cachePrefix: false,
+	});
+
+	testFileLoader("when caching under type and full path", {
+		loader: () => new TypeAndFullPathCachingFileLoader({
+			baseUrl: baseUrl,
+		}),
+		cachePrefix: true,
 	});
 });

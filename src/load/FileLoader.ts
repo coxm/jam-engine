@@ -1,9 +1,10 @@
+import {cache} from './cache';
+
 export const parseJSON = JSON.parse.bind(JSON);
 
 
 export interface FileLoaderOptions {
 	baseUrl: string;
-	cache: Map<string, any> | boolean;
 	suffix?: string;
 }
 
@@ -13,7 +14,6 @@ export interface FileLoaderOptions {
  */
 export class FileLoader {
 	readonly baseUrl: string;
-	readonly cache: Map<string, any> | null;
 	readonly suffix: string;
 
 	/**
@@ -21,22 +21,11 @@ export class FileLoader {
 	 *
 	 * @param options.baseUrl this loader's base URL. All file paths will be
 	 * considered relative to the base URL.
-	 * @param options.cache this loader's cache: if `undefined`, a new cache
-	 * will be constructed specifically for this loader; if `null`, caching
-	 * will be prevented; otherwise, the provided value is used as a cache.
+	 * @param options.suffix an optional suffix to append when loading files.
+	 * Defaults to `'!text.js'`.
 	 */
 	constructor(options: FileLoaderOptions) {
 		this.baseUrl = options.baseUrl.replace(/\/$/, '');
-		switch (options.cache) {
-			case false:
-				this.cache = null;
-				break;
-			case true:
-				this.cache = new Map<string, any>();
-				break;
-			default:
-				this.cache = options.cache;
-		}
 		this.suffix = (typeof options.suffix === 'string'
 			? options.suffix
 			: '!text.js'
@@ -54,7 +43,7 @@ export class FileLoader {
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
 	text(relpath: string): Promise<string> {
-		return this.file(relpath + this.suffix);
+		return System.import(this.abspath(relpath) + this.suffix);
 	}
 
 	/**
@@ -63,76 +52,84 @@ export class FileLoader {
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
 	json<T>(relpath: string): Promise<T> {
-		return this.file(relpath + this.suffix, parseJSON);
-	}
-
-	/**
-	 * Get the key for caching a file under.
-	 *
-	 * Strips the suffix if found.
-	 */
-	protected cacheKey(abspath: string): string {
-		return abspath.replace(new RegExp(this.suffix + '$'), '');
-	}
-
-	/**
-	 * Load a file.
-	 *
-	 * Stores the result in this loader's cache, if any.
-	 * @param relpath the file path, relative to this loader's base URL.
-	 * @param parse a parsing function.
-	 * @returns a promise which resolves with the file contents, parsed if
-	 * `parse` is provided.
-	 */
-	protected file(
-		relpath: string,
-		parse?: (content: string) => any
-	)
-		: Promise<any>
-	{
-		const importPath = this.abspath(relpath);
-		return (this.cache
-			? this.cached(importPath, parse)
-			: this.uncached(importPath, parse)
-		);
-	}
-
-	/**
-	 * Load a file, caching the result.
-	 *
-	 * Stores the result in this loader's cache, which is assumed to exist.
-	 * @param abspath the full file path.
-	 * @param parse a parsing function.
-	 * @returns a promise which resolves with the file contents, parsed if
-	 * `parse` is provided.
-	 */
-	protected cached(abspath: string, parse?: (content: string) => any)
-		: Promise<any>
-	{
-		const cacheKey = this.cacheKey(abspath);
-		for (let [k, v] of this.cache!.entries()) {
-			if (k === cacheKey) {
-				return v;
-			}
-		}
-
-		const promise = this.uncached(abspath, parse);
-		this.cache!.set(cacheKey, promise);
-		return promise;
-	}
-
-	/**
-	 * Load a file, without caching the result.
-	 *
-	 * @param abspath the full file path.
-	 * @param parse a parsing function.
-	 * @returns a promise which resolves with the file contents, parsed if
-	 * `parse` is provided.
-	 */
-	protected uncached(abspath: string, parse?: (content: string) => any)
-		: Promise<any>
-	{
-		const promise = System.import(abspath);
-		return parse ? promise.then(parse) : promise;
+		return this.text(relpath).then(parseJSON);
 	}
 }
+
+
+/** Get the default cache for a file loader. */
+export function getDefaultCache(target: FileLoader): Map<string, any> {
+	return (<any> target).cache || (
+		(<any> target).cache = new Map<string, any>()
+	);
+}
+
+
+/**
+ * A decorator for caching file load requests.
+ *
+ * Example usage:
+ *
+ *     class CachedLoader extends FileLoader {
+ *         readonly cache: Map<string, any>;
+ *         @cache
+ *         text(relpath: string): string {
+ *             return super.text(relpath);
+ *         }
+ *     }
+ *     const loader = new CachedLoader({baseUrl: '/base'});
+ *     expect(
+ *         loader.text('/base/file.txt')
+ *     ).toBe(
+ *         loader.cache('text:/base/file.txt')  // Note the method and path.
+ *     );
+ */
+export const cacheUnderTypeAndFullPath = cache(
+	getDefaultCache,
+	function(
+		this: FileLoader,
+		target: any,
+		method: string,
+		desc: PropertyDescriptor,
+		args: IArguments
+	)
+		: string
+	{
+		return `${method}:${this.baseUrl}/${args[0]}`;
+	}
+);
+
+
+/**
+ * A decorator for caching file load requests.
+ *
+ * Example usage:
+ *
+ *     class CachedLoader extends FileLoader {
+ *         readonly cache: Map<string, any>;
+ *         @cache
+ *         text(relpath: string): string {
+ *             return super.text(relpath);
+ *         }
+ *     }
+ *     const loader = new CachedLoader({baseUrl: '/base'});
+ *     expect(
+ *         loader.text('/base/file.txt')
+ *     ).toBe(
+ *         loader.cache('/base/file.txt')  // Note the full path.
+ *     );
+ */
+export const cacheUnderFullPath = cache(
+	getDefaultCache,
+	function(
+		this: FileLoader,
+		target: any,
+		method: string,
+		desc: PropertyDescriptor,
+		args: IArguments
+	)
+		: string
+	{
+		return `${this.baseUrl}/${args[0]}`;
+	}
+);
