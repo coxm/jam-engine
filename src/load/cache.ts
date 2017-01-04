@@ -13,10 +13,34 @@ export interface ComplexKeyGetter {
 }
 
 
-export function cache(
-	store: Map<any, any>,
-	keyGetter: SimpleKeyGetter | ComplexKeyGetter
-)
+export type AnyKeyGetter = (
+	SimpleKeyGetter |
+	ComplexKeyGetter
+);
+
+
+export interface StoreGetter {
+	(target: any, propKey: string, desc: PropertyDescriptor): Map<any, any>;
+}
+
+
+export type AnyStoreArg = (
+	Map<any, any> |
+	StoreGetter |
+	string
+);
+
+
+/**
+ * Cache a method's return values.
+ *
+ * @see test/load/cache.ts for examples.
+ *
+ * @param store an `AnyStoreArg` type, for obtaining a store (`Map`) object.
+ * @param keyGetter a function which determines cache keys.
+ * @returns a method decorator function.
+ */
+export function cache(store: AnyStoreArg, keyGetter: AnyKeyGetter)
 	: MethodDecorator
 {
 	return function decorator(
@@ -37,16 +61,31 @@ export function cache(
 				}
 		);
 
+		let theStore: Map<any, any>;
+		switch (typeof store) {
+			case 'object':
+				theStore = <Map<any, any>> store;
+				break;
+			case 'function':
+				theStore = (<StoreGetter> store)(target, propKey, desc);
+				break;
+			default:
+				theStore = target[<string> store] || (
+					target[<string> store] = new Map()
+				);
+				break;
+		}
+
 		const original: Function = desc.value;
 		desc.value = function cacheWrapper(this: any): any {
 			const key: any = getKey.call(this, arguments);
-			for (let [k, v] of store.entries()) {
+			for (let [k, v] of theStore.entries()) {
 				if (k === key) {
 					return v;
 				}
 			}
 			const result = original.apply(this, arguments);
-			store.set(key, result);
+			theStore.set(key, result);
 			return result;
 		};
 	};
@@ -58,8 +97,6 @@ export function firstArgument(args: IArguments): any {
 }
 
 
-export function cacheUnderFirstArgument(store: Map<any, any>)
-	: MethodDecorator
-{
+export function cacheUnderFirstArgument(store: AnyStoreArg): MethodDecorator {
 	return cache(store, firstArgument);
 }

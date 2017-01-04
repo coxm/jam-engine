@@ -1,19 +1,30 @@
 import {cache, cacheUnderFirstArgument} from 'jam/load/cache';
 
 
-const store: Map<string | number, {value: number;}> = new Map();
+type Store = Map<string | number, {value: number;}>;
+const store: Store = new Map();
+
+
+function hyphenateArgs(args: IArguments): string {
+	return [...args].join('-');
+}
 
 
 class Dummy {
+	storeGetter_cache: Store;
+	storePropertyName_cache: Store;
+
 	uncached(a: number, b: number): {value: number;} {
 		return {value: a + b};
 	}
 
-	@cache(store, (args: IArguments): string => [...args].join('-'))
+	/** Simple caching example. */
+	@cache(store, hyphenateArgs)
 	simple(a: number, b: number): {value: number;} {
 		return this.uncached(a, b);
 	}
 
+	/** More complex example: use the property name to inform cache keys. */
 	@cache(store, (
 		target: any,
 		propKey: string,
@@ -24,6 +35,23 @@ class Dummy {
 		return this.uncached(a, b);
 	}
 
+	/** Use a custom store getter to set the store. */
+	@cache(
+		(target: any, propKey: string): Store => (
+			target[propKey + '_cache'] = store
+		),
+		hyphenateArgs
+	)
+	storeGetter(a: number, b: number): {value: number;} {
+		return this.uncached(a, b);
+	}
+
+	@cache('storePropertyName_cache', hyphenateArgs)
+	storePropertyName(a: number, b: number): {value: number;} {
+		return this.uncached(a, b);
+	}
+
+	/** Simply cache values in `store` under the first argument. */
 	@cacheUnderFirstArgument(store)
 	first(a: number, b: number): {value: number;} {
 		return this.uncached(a, b);
@@ -68,6 +96,57 @@ describe("cache decorator", (): void => {
 			const result = {value: 42};
 			store.set('complex-1-2', result);
 			expect(dummy.complex(1, 2)).toBe(result);
+			expect(dummy.uncached).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("(store getter)", (): void => {
+		it("can modify the target", (): void => {
+			expect(dummy.storeGetter_cache).toBe(store);
+		});
+		it("returns the expected result", (): void => {
+			expect(dummy.storeGetter(1, 2)).toEqual({value: 3});
+		});
+		it("caches results in the provided store", (): void => {
+			dummy.storeGetter(1, 2);
+			expect(store.get('1-2')).toEqual({value: 3});
+		});
+		it("uses results from the store if possible", (): void => {
+			const result = {value: 42};
+			store.set('1-2', result);
+			expect(dummy.storeGetter(1, 2)).toBe(result);
+			expect(dummy.uncached).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("(store property name)", (): void => {
+		it("initialises the store when decorator is called", (): void => {
+			expect(dummy.storePropertyName_cache instanceof Map).toBe(true);
+		});
+
+		describe("uses the existing property", (): void => {
+			beforeEach((): void => {
+				dummy.storePropertyName_cache = store;
+			});
+			it("if set", (): void => {
+			});
+		});
+		it("creates the store if it doesn't exist", (): void => {
+			expect(dummy.storePropertyName_cache instanceof Map).toBe(true);
+		});
+		it("returns the expected result", (): void => {
+			expect(dummy.storePropertyName(1, 2)).toEqual({value: 3});
+		});
+		it("caches results in the provided store", (): void => {
+			dummy.storePropertyName(1, 2);
+			expect(dummy.storePropertyName_cache.get('1-2')).toEqual({
+				value: 3
+			});
+		});
+		it("uses results from the store if possible", (): void => {
+			const result = {value: 42};
+			dummy.storePropertyName_cache.set('1-2', result);
+			expect(dummy.storePropertyName(1, 2)).toBe(result);
 			expect(dummy.uncached).not.toHaveBeenCalled();
 		});
 	});
