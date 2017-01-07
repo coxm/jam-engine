@@ -1,3 +1,6 @@
+export const EPSILON: number = 1e-10;
+
+
 export function noop(): void {
 	/* tslint:enable:no-empty */
 	/* tslint:disable:no-empty */
