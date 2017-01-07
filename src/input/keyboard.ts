@@ -41,6 +41,7 @@ export const actions: {
  */
 export const defaultKeyCodeSymbols: { [code: number]: symbol; } = {
 	19: actions.pause, // Pause/Break.
+	27: actions.escape, // Escape.
 
 	37: actions.left,  // Left.
 	38: actions.up,    // Up.
