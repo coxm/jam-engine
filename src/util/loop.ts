@@ -1,24 +1,38 @@
-export interface LoopOptions<Context> {
-	readonly fn: (this: Context) => void;
-	readonly ctx?: Context;
-	readonly ms: number;
+export interface LoopFunction<Context> {
+	(this: Context, msNow: number, msSinceLast: number): void;
 }
 
 
-export class Loop {
-	readonly fn: () => void;
+export interface LoopOptions<Context> {
+	readonly fn: LoopFunction<Context>;
 	readonly ms: number;
+	readonly ctx?: Context;
+}
+
+
+export class Loop<Context> {
+	readonly fn: LoopFunction<Context>;
+	readonly ms: number;
+	readonly ctx: Context | undefined;
 
 	private intervalID: number = 0;
 
-	constructor(options: LoopOptions<any>) {
-		this.fn = options.ctx ? options.fn.bind(options.ctx) : options.fn;
+	constructor(options: LoopOptions<Context>) {
+		this.fn = options.fn;
 		this.ms = options.ms;
+		this.ctx = options.ctx;
 	}
 
 	start(): void {
 		if (this.intervalID === 0) {
-			this.intervalID = setInterval(this.fn, this.ms);
+			const fn = this.fn;
+			const ctx = this.ctx;
+			let prev: number = Date.now();
+			this.intervalID = setInterval((): void => {
+				const now: number = Date.now();
+				fn.call(ctx, now, now - prev);
+				prev = now;
+			}, this.ms);
 		}
 	}
 
@@ -35,6 +49,6 @@ export class Loop {
 }
 
 
-export function loop(options: LoopOptions<any>): Loop {
+export function loop<Context>(options: LoopOptions<Context>): Loop<Context> {
 	return new Loop(options);
 }
