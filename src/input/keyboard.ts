@@ -23,13 +23,15 @@ export const actions: {
 	down: symbol;
 	left: symbol;
 	right: symbol;
-	pause: symbol
+	pause: symbol;
+	escape: symbol;
 } = {
 	up: Symbol('up'),
 	down: Symbol('down'),
 	left: Symbol('left'),
 	right: Symbol('right'),
 	pause: Symbol('pause'),
+	escape: Symbol('escape'),
 };
 
 
