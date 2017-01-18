@@ -28,7 +28,7 @@ export function toInt(x: number): number {
 
 
 export function randInRange(min: number, max: number): number {
-	return Math.random() * (max - min) - min;
+	return Math.random() * (max - min) + min;
 }
 
 

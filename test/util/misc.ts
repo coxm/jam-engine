@@ -3,6 +3,7 @@ import {
 	identity,
 	isReal,
 	isInt,
+	randInRange,
 	collect,
 }
 from 'jam/util/misc';
@@ -71,6 +72,25 @@ describe("numeric utility", (): void => {
 		});
 		it("returns false for strings", (): void => {
 			expect(isReal(<any> '5')).toBe(false);
+		});
+	});
+
+	describe("randInRange", (): void => {
+		it("returns a value in the given range", (): void => {
+			let a: number = 0;
+			let b: number = 0;
+			for (let i: number = 0; i < 100; ++i) {
+				a = 10000 * Math.random() * 10000 - 5000;
+				b = 10000 * Math.random() * 10000 - 5000;
+				if (a > b) {
+					[a, b] = [b, a];
+				}
+
+				const rand: number = randInRange(a, b);
+				const str: string = `randInRange(${a}, ${b}) was ${rand}`;
+				expect(a <= rand).toBe(true, str);
+				expect(rand <= b).toBe(true, str);
+			}
 		});
 	});
 });
