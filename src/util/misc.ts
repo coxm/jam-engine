@@ -13,7 +13,7 @@ export function identity<T>(t: T): T {
 
 
 export function isReal(x: number): boolean {
-	return x === +x && Math.abs(x) < Infinity;;
+	return x === +x && Math.abs(x) < Infinity;
 }
 
 
@@ -42,13 +42,18 @@ export function clamp(x: number, min: number, max: number): number {
 }
 
 
+export function intOr(x: any, ifNot: number): number {
+	return (x === (x | 0)) ? x : ifNot;
+}
+
+
 export function realOr(x: any, ifNot: number): number {
 	return isReal(x) ? x : ifNot;
 }
 
 
-export function intOr(x: any, ifNot: number): number {
-	return isInt(x) ? x : ifNot;
+export function numberOr(x: any, ifNot: number): number {
+	return x === +x ? x : ifNot;
 }
 
 

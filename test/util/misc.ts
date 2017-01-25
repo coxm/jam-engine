@@ -3,6 +3,9 @@ import {
 	identity,
 	isReal,
 	isInt,
+	intOr,
+	realOr,
+	numberOr,
 	randInRange,
 	collect,
 }
@@ -26,7 +29,7 @@ describe("numeric utility", (): void => {
 
 	let integers: number[] = [];
 	let floats: number[] = [];
-	
+
 	beforeEach((): void => {
 		integers = andNegated([
 			0,
@@ -53,6 +56,104 @@ describe("numeric utility", (): void => {
 				expect(isInt(f)).toBe(false);
 			}
 		});
+	});
+
+	function testEitherOr(func: (x: any, ifNot: number) => number, allow: {
+		ints: boolean;
+		floats: boolean;
+		infinities: boolean;
+		nan: boolean;
+	})
+		: void
+	{
+		describe(func.name, (): void => {
+			const defaultValue: number = -123456789;
+
+			it(
+				`returns the ${allow.ints ? 'value' : 'default'} for ints`,
+				(): void => {
+					if (allow.ints) {
+						for (let i of integers) {
+							expect(func(i, defaultValue)).toBe(i);
+						}
+					}
+					else {
+						for (let i of integers) {
+							expect(func(i, defaultValue)).toBe(defaultValue);
+						}
+					}
+				}
+			);
+
+			it(
+				'returns the ' + (allow.floats ? 'value' : 'default') +
+				' for proper floats',
+				(): void => {
+					if (allow.floats) {
+						for (let f of floats) {
+							expect(func(f, defaultValue)).toBe(f);
+						}
+					}
+					else {
+						for (let f of floats) {
+							expect(func(f, defaultValue)).toBe(defaultValue);
+						}
+					}
+				}
+			);
+
+			it(
+				'returns the ' + (allow.infinities ? 'value' : 'default') +
+				' for infinities',
+				(): void => {
+					if (allow.infinities) {
+						expect(func(Infinity, defaultValue)).toBe(Infinity);
+						expect(func(-Infinity, defaultValue)).toBe(-Infinity);
+					}
+					else {
+						expect(func(Infinity, defaultValue))
+							.toBe(defaultValue);
+						expect(func(-Infinity, defaultValue))
+							.toBe(defaultValue);
+					}
+				}
+			);
+
+			it(
+				`returns the ${allow.nan ? 'value' : 'default'} for NaN`,
+				(): void => {
+					expect(func(NaN, defaultValue))
+						.toBe(allow.nan ? NaN : defaultValue);
+				}
+			);
+
+			it("returns the default for non-numbers", (): void => {
+				for (let val of [null, {}, [], '1', '']) {
+					expect(func(val, defaultValue)).toBe(defaultValue);
+				}
+			});
+		});
+	}
+
+	testEitherOr(intOr, {
+		ints: true,
+		floats: false,
+		infinities: false,
+		nan: false,
+	});
+
+	testEitherOr(realOr, {
+		ints: true,
+		floats: true,
+		infinities: false,
+		nan: false,
+	});
+
+	testEitherOr(numberOr, {
+		ints: true,
+		floats: true,
+		infinities: true,
+		nan: false,
 	});
 
 	describe("isReal", (): void => {
