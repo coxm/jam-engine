@@ -62,6 +62,15 @@ export function collect<T>(array: T[][]): T[] {
 }
 
 
+export interface Dict<V> {
+	[key: number]: V;
+	[key: string]: V;
+}
+
+
+export type DictKey = string | number | symbol;
+
+
 export function dictMap<U, V>(
 	func: (val: U, key: DictKey) => V,
 	input: Dict<U> | U[],

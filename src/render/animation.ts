@@ -25,7 +25,12 @@ export interface SpriteSheetDef {
 }
 
 
-export function animations(def: SpriteSheetDef): Dict<PIXI.extras.MovieClip> {
+export function animations(def: SpriteSheetDef)
+	:	{
+		[key: string]: PIXI.extras.MovieClip;
+		[key: number]: PIXI.extras.MovieClip;
+	}
+{
 	return dictMap(
 		(anim: AnimationDef) => animation(
 			def.texture, anim, def.frameWidth, def.frameHeight
