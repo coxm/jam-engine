@@ -8,6 +8,8 @@ import {
 	numberOr,
 	randInRange,
 	collect,
+	dictMap,
+	dictMapKV,
 }
 from 'jam/util/misc';
 
@@ -203,5 +205,85 @@ describe("collect", (): void => {
 			[1, 2, 3],
 			['apple', 'pear']
 		])).toEqual([1, 2, 3, 'apple', 'pear']);
+	});
+});
+
+
+describe("dictMap", (): void => {
+	let input: {[key: string]: number;};
+
+	beforeEach((): void => {
+		input = {
+			a: 1,
+			b: 2,
+			c: 3,
+		};
+	});
+
+	it("maps properties", (): void => {
+		const mapped = dictMap(
+			(v: number, k: string): string => `${k}_${v}`,
+			input
+		);
+
+		expect(mapped).toEqual({
+			a: 'a_1',
+			b: 'b_2',
+			c: 'c_3',
+		});
+	});
+
+	it("adds to the output object if provided", (): void => {
+		const output = {d: 'existing'};
+		const mapped = dictMap(
+			(v: number, k: string): string => `${k}_${v}`,
+			input,
+			output
+		);
+		expect(mapped).toBe(output);
+		expect(output).toEqual({
+			a: 'a_1',
+			b: 'b_2',
+			c: 'c_3',
+			d: 'existing',
+		});
+	});
+});
+
+
+describe("dictMapKV", (): void => {
+	let input: {[key: string]: number;};
+
+	beforeEach((): void => {
+		input = {
+			a: 1,
+			b: 2,
+			c: 3,
+		};
+	});
+
+	it("maps properties", (): void => {
+		const mapped = dictMapKV((v: number, k: string) => [k, v], input);
+		expect(mapped).toEqual({
+			1: 'a',
+			2: 'b',
+			3: 'c',
+		});
+	});
+
+	it("adds to the output object if provided", (): void => {
+		const output = {d: 'existing'};
+		const mapped = dictMapKV(
+			(v: number, k: string) => [k, v],
+			input,
+			output
+		);
+		expect(mapped).toBe(output);
+		expect(output).toEqual({
+			1: 'a',
+			2: 'b',
+			3: 'c',
+			d: 'existing',
+		});
 	});
 });

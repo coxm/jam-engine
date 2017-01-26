@@ -60,3 +60,37 @@ export function numberOr(x: any, ifNot: number): number {
 export function collect<T>(array: T[][]): T[] {
 	return Array.prototype.concat.apply([], array);
 }
+
+
+export function dictMap<U, V>(
+	func: (val: U, key: DictKey) => V,
+	input: Dict<U> | U[],
+	out: Dict<V> = {}
+)
+	:	Dict<V>
+{
+	for (let key in input) {
+		out[key] = func(input[key], key);
+	}
+	return out;
+}
+
+
+export interface DictKeyValueMapper<U, V> {
+	(inputValue: U, inputKey: DictKey): [V, DictKey];
+}
+
+
+export function dictMapKV<U, V>(
+	func: DictKeyValueMapper<U, V>,
+	input: Dict<U> | U[],
+	out: Dict<V> = {}
+)
+	: Dict<V>
+{
+	for (let key in input) {
+		const [v, k] = func(input[key], key);
+		out[k] = v;
+	}
+	return out;
+}
