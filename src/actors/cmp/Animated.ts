@@ -56,4 +56,3 @@ export class Animated implements Component {
 	onRemove(actor: Actor): void {
 	}
 }
-(<any> Animated.prototype).key = 'anim';

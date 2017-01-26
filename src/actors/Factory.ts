@@ -52,10 +52,11 @@ export class Factory<ActorType> {
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
 			const cmp: Component = this.component(cmpDef, actorID, def);
-			if (components[cmp.key]) {
-				throw new Error(`Duplicated component key "${cmp.key}"`);
+			const key: string = cmp.key || cmp.constructor.name;
+			if (components[key]) {
+				throw new Error(`Duplicated component key "${key}"`);
 			}
-			components[cmp.key] = cmp;
+			components[key] = cmp;
 		}
 
 		++this.counter;
