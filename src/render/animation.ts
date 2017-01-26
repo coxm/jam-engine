@@ -8,6 +8,8 @@ export type FrameList = Range | (Range | number)[];
 export interface AnimationDef {
 	/** Frames in this animation. If unspecified, all frames are used. */
 	readonly frames?: FrameList;
+	/** An optional anchor. Defaults to [0.5, 0.5]. */
+	readonly anchor?: AnyVec2;
 	/** Whether to concatenate with the rewound animation. */
 	readonly rewind?: boolean;
 }
@@ -60,11 +62,21 @@ export function animation(
 			rects.push(rects[i]);
 		}
 	}
-	return new (<any> PIXI.extras).MovieClip(
+
+	const anim = new (<any> PIXI.extras).MovieClip(
 		rects.map(
 			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
 		)
 	);
+
+	if (def.anchor) {
+		anim.anchor.set(def.anchor[0], def.anchor[1]);
+	}
+	else {
+		anim.anchor.set(0.5, 0.5);
+	}
+
+	return anim;
 }
 
 
