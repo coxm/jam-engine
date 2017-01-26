@@ -60,7 +60,7 @@ export function animation(
 			rects.push(rects[i]);
 		}
 	}
-	return new (<any> PIXI.extras).AnimatedSprite(
+	return new (<any> PIXI.extras).MovieClip(
 		rects.map(
 			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
 		)
