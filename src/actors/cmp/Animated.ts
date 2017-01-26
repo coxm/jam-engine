@@ -31,7 +31,7 @@ export class Animated implements Component {
 		this.select(initial);
 	}
 
-	get graphics(): PIXI.extras.MovieClip {
+	get renderable(): PIXI.extras.MovieClip {
 		return this.current;
 	}
 
