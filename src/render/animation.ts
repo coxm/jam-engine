@@ -1,4 +1,5 @@
 import {Range, range, combine} from 'jam/util/range';
+import {dictMap} from 'jam/util/misc';
 
 
 export type FrameList = Range | (Range | number)[];
@@ -13,7 +14,7 @@ export interface AnimationDef {
 
 
 export interface SpriteSheetDef {
-	readonly image: string | PIXI.Texture;
+	readonly texture: PIXI.Texture;
 	readonly frameWidth: number;
 	readonly frameHeight: number;
 	readonly frameCount: number;
@@ -21,7 +22,44 @@ export interface SpriteSheetDef {
 		[id: string]: AnimationDef;
 		[id: number]: AnimationDef;
 	};
-	readonly initial?: string | number;
+}
+
+
+export function animations(def: SpriteSheetDef): Dict<PIXI.extras.MovieClip> {
+	return dictMap(
+		(anim: AnimationDef) => animation(
+			def.texture, anim, def.frameWidth, def.frameHeight
+		),
+		def.animations
+	);
+}
+
+
+export function animation(
+	texture: PIXI.Texture,
+	def: AnimationDef,
+	frameWidth: number,
+	frameHeight: number
+)
+	: PIXI.extras.MovieClip
+{
+	const rects: PIXI.Rectangle[] = [...frames(
+		def.frames,
+		frameWidth,
+		frameHeight,
+		texture.width,
+		texture.height
+	)];
+	if (def.rewind) {
+		for (let i: number = rects.length - 1; 0 <= i; --i) {
+			rects.push(rects[i]);
+		}
+	}
+	return new (<any> PIXI.extras).AnimatedSprite(
+		rects.map(
+			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
+		)
+	);
 }
 
 
