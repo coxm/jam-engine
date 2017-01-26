@@ -6,7 +6,7 @@ export class TextureLoader extends FileLoader {
 		return PIXI.utils.TextureCache[this.abspath(relpath)];
 	}
 
-	image(relpath: string): Promise<PIXI.Texture> {
+	texture(relpath: string): Promise<PIXI.Texture> {
 		const abspath: string = this.abspath(relpath);
 		return new Promise((resolve, reject): void => {
 			PIXI.loader.add(abspath).load((): void => {
@@ -15,7 +15,7 @@ export class TextureLoader extends FileLoader {
 		});
 	}
 
-	images(...relpaths: string[]): Promise<void> {
+	textures(...relpaths: string[]): Promise<void> {
 		return new Promise((resolve, reject): void => {
 			PIXI.loader
 			.add(relpaths.map(this.abspath.bind(this)))
