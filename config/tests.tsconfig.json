@@ -33,6 +33,7 @@
 	],
 	"files": [
 		"../typings/globals/jasmine/index.d.ts",
+		"../typings/globals/pixi.js/index.d.ts",
 		"../defs/lib.d.ts"
 	]
 }

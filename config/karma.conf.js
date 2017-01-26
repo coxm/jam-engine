@@ -21,7 +21,8 @@ module.exports = function(config) {
 			{pattern: 'build/js/*.js', included: false},
 			{pattern: 'build/js/**/*.js', included: false},
 			{pattern: 'build/test/**/*.js', included: false},
-			{pattern: 'node_modules/**/*.js', included: false, watched: false}
+			{pattern: 'node_modules/**/*.js', included: false, watched: false},
+			'node_modules/pixi.js/dist/pixi.min.js'
 		],
 		exclude: [
 		],
