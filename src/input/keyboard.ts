@@ -1,4 +1,6 @@
-import {Event, Manager as EventManager} from '../events';
+import {Event, Manager as EventManager, Handler} from 'jam/events';
+
+import {KeyCode} from './KeyCode';
 
 
 /** Interface for the data transmitted with keyboard events. */
@@ -9,92 +11,48 @@ export interface KeyEventData {
 
 
 /** Type alias for keyboard events. */
-export type KeyEvent = Event<symbol, KeyEventData>;
+export type KeyEvent = Event<KeyCode, KeyEventData>;
 
 
-/**
- * Actions which keyboard input will be translated into.
- *
- * For example, hitting 'W' may be interpreted as an 'up' action.
- */
-export const actions: {
-	[name: string]: symbol;
-	up: symbol;
-	down: symbol;
-	left: symbol;
-	right: symbol;
-	pause: symbol;
-	escape: symbol;
-} = {
-	up: Symbol('up'),
-	down: Symbol('down'),
-	left: Symbol('left'),
-	right: Symbol('right'),
-	pause: Symbol('pause'),
-	escape: Symbol('escape'),
-};
-
-
-/**
- * Default key code symbols.
- *
- * This dict can be altered if required, or if preferred the key translator can
- * be changed instead, using {@link setKeyTranslator}.
- */
-export const defaultKeyCodeSymbols: { [code: number]: symbol; } = {
-	19: actions.pause, // Pause/Break.
-	27: actions.escape, // Escape.
-
-	37: actions.left,  // Left.
-	38: actions.up,    // Up.
-	39: actions.right, // Right.
-	40: actions.down,  // Down.
-
-	65: actions.left,  // A.
-	68: actions.right, // D.
-	83: actions.down,  // S.
-	87: actions.up,    // W.
-
-	72: actions.left,  // H.
-	74: actions.down,  // J.
-	75: actions.up,    // K.
-	76: actions.right, // L.
-};
-
-
-/**
- * The function which translates keys into actions.
- *
- * Can be overwritten by {@link setKeyTranslator}.
- */
-let keyTranslator: (code: number) => symbol =
-	(code: number): symbol => defaultKeyCodeSymbols[code];
-
-
-/** Set the function which translates key codes into action symbols. */
-export function setKeyTranslator(fn: (code: number) => symbol): void {
-	keyTranslator = fn;
-}
+/** Type alias for key event handling function. */
+export type KeyHandler = Handler<KeyCode, KeyEventData>;
 
 
 /** Key down state, by event key code. */
-const keyIsDown: { [keyCode: number]: boolean; } = {};
+const keysDown = new Int32Array(8);
+
+
+/**
+ * Set the key-down state of a key.
+ *
+ * @param keyCode the key's numeric code.
+ * @param down whether the key should be set to down (true) or up (false).
+ * @returns true iff the value changed.
+ */
+export function setKeyDown(keyCode: KeyCode | number, down: boolean): boolean {
+	const index: number = (keyCode / 32) | 0;
+	const mask: number = 1 << ((keyCode % 32));
+	const old: number = keysDown[index];
+	// Bithack: `w = (w & ~m) | (-f & m);` from
+	// https://graphics.stanford.edu/~seander/bithacks.html
+	return old !== (keysDown[index] = (old & ~mask) | (-down & mask));
+}
 
 
 /** Check if a key is down. */
-export function isDown(key: symbol | number): boolean {
-	return keydown[typeof key === 'number' ? key : keyTranslator(key)];
+export function isDown(keyCode: KeyCode | number): boolean {
+	return !!(keysDown[(keyCode / 32) | 0] & (1 << (keyCode % 32)));
 }
 
 
 /** The keydown event manager. */
-export const keydown: EventManager<symbol, KeyEventData> =
-	new EventManager<symbol, KeyEventData>();
+export const keydown =
+	new EventManager<KeyCode | number | string | symbol, KeyEventData>();
 
 
 /** The keyup event manager. */
-export const keyup: EventManager<symbol, KeyEventData> =
-	new EventManager<symbol, KeyEventData>();
+export const keyup =
+	new EventManager<KeyCode | number | string | symbol, KeyEventData>();
 
 
 /**
@@ -104,22 +62,55 @@ export const keyup: EventManager<symbol, KeyEventData> =
  * for several seconds, a single keydown event will be fired.
  */
 export function onKeyEvent(
-	events: EventManager<symbol, KeyEventData>,
+	events: EventManager<KeyCode, KeyEventData>,
+	condense: (keyCode: KeyCode) => number,
 	state: boolean,
 	event: KeyboardEvent
 )
 	: void
 {
-	const sym: symbol = keyTranslator(event.keyCode);
-	if ((sym !== undefined) && (keyIsDown[event.keyCode] !== state)) {
-		keyIsDown[event.keyCode] = state;
-		events.fire(sym, {
+	const code: number = condense ? condense(event.keyCode) : event.keyCode;
+	if (code === +code && setKeyDown(code, state)) {
+		events.fire(code, {
 			originalEvent: event,
-			isDown: state
+			isDown: state,
 		});
 	}
 }
 
 
-document.addEventListener('keydown', onKeyEvent.bind(null, keydown, true));
-document.addEventListener('keyup', onKeyEvent.bind(null, keyup, false));
+/**
+ * Initialise key event listening for the entire document.
+ *
+ * @param condense an optional KeyCode condensing function. If provided,
+ * key codes for which `condense` returns `undefined` will be ignored. Other
+ * key codes will trigger events under the return value.
+ *
+ * @example
+ * initKeyEvents((keyCode) => {
+ *     return (keyCode === KeyCode.Enter ? 'Enter' : undefined;
+ * });
+ * keydown.on('Enter', () => { console.log('Enter string'); });
+ * keydown.on(KeyCode.Enter, () => { console.log('Enter KeyCode'); });
+ * keydown.on(KeyCode.Space, () => { console.log('Space KeyCode'); });
+ * // On 'Enter' keypress: 'string'
+ * // On 'Space' keypress, nothing happens.
+ */
+export function initKeyEvents(
+	target?: HTMLElement | Document | undefined | null,
+	condense?: (kc: KeyCode) => number
+)
+	: void
+{
+	if (!target) {
+		target = document;
+	}
+	target.addEventListener(
+		'keydown',
+		onKeyEvent.bind(null, keydown, condense, true)
+	);
+	target.addEventListener(
+		'keyup',
+		onKeyEvent.bind(null, keyup, condense, false)
+	);
+}
