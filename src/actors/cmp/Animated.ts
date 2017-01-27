@@ -7,6 +7,8 @@ export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
 	readonly factory: 'anim';
 	/** The initial animation to show. */
 	readonly initial?: string | number;
+	/** Optionally prevent the animation from playing on construction. */
+	readonly stopped?: boolean;
 }
 
 
@@ -28,7 +30,8 @@ export class Animated implements Component {
 				break;
 			}
 		}
-		this.select(initial);
+		this.current = this.anims[initial];
+		this.current.play();
 	}
 
 	get renderable(): PIXI.extras.MovieClip {
@@ -37,9 +40,18 @@ export class Animated implements Component {
 
 	select(id: number|string): void {
 		if (!this.anims[id]) {
-			throw new Error("No '${id}' anim");
+			throw new Error(`No '${id}' anim`);
+		}
+		const old = this.current;
+		if (old.parent) {
+			old.parent.addChild(this.anims[id]);
+			old.parent.removeChild(old);
 		}
 		this.current = this.anims[id];
+		if (old.playing) {
+			old.stop();
+			this.current.play();
+		}
 	}
 
 	play(): void {
