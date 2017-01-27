@@ -81,6 +81,12 @@ export function setKeyTranslator(fn: (code: number) => symbol): void {
 const keyIsDown: { [keyCode: number]: boolean; } = {};
 
 
+/** Check if a key is down. */
+export function isDown(key: symbol | number): boolean {
+	return keydown[typeof key === 'number' ? key : keyTranslator(key)];
+}
+
+
 /** The keydown event manager. */
 export const keydown: EventManager<symbol, KeyEventData> =
 	new EventManager<symbol, KeyEventData>();
