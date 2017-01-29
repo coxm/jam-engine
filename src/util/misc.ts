@@ -103,3 +103,21 @@ export function dictMapKV<U, V>(
 	}
 	return out;
 }
+
+
+export function dictExclude<U, V>(
+	func: (input: U, key: DictKey) => V,
+	exclude: V,
+	input: Dict<U>,
+	out: Dict<V> = {}
+)
+	: Dict<V>
+{
+	for (let key in input) {
+		const result = func(input[key], key);
+		if (result !== exclude) {
+			out[key] = result;
+		}
+	}
+	return out;
+}
