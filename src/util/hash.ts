@@ -2,6 +2,9 @@ const UNDEFINED: symbol = Symbol('undefined');
 const NULL: symbol = Symbol('null');
 
 
+const hashSymKey = Symbol('#jam-sym#');
+
+
 export function sym(val: Object | Function | null | undefined): symbol {
 	switch (val) {
 		case null:
@@ -9,8 +12,8 @@ export function sym(val: Object | Function | null | undefined): symbol {
 		case undefined:
 			return UNDEFINED;
 		default:
-			return (<any> val)._jamHash || (
-				(<any> val)._jamHash = Symbol()
+			return (<any> val)[hashSymKey] || (
+				(<any> val)[hashSymKey] = Symbol()
 			);
 	}
 }
@@ -20,6 +23,8 @@ let counter: number = 0;
 const NULL_NUM: number = 0;
 const UNDEFINED_NUM: number = 1;
 
+const hashNumKey = Symbol('#jam-num#');
+
 
 export function num(val: Object | Function | null | undefined): number {
 	switch (val) {
@@ -28,8 +33,8 @@ export function num(val: Object | Function | null | undefined): number {
 		case undefined:
 			return UNDEFINED_NUM;
 		default:
-			return (<any> val)._jamHashNum || (
-				(<any> val)._jamHashNum = ++counter
+			return (<any> val)[hashKey] || (
+				(<any> val)[hashKey] = ++counter
 			);
 	}
 }
