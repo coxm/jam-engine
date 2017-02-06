@@ -9,9 +9,16 @@ export class TextureLoader extends FileLoader {
 	texture(relpath: string): Promise<PIXI.Texture> {
 		const abspath: string = this.abspath(relpath);
 		return new Promise((resolve, reject): void => {
-			PIXI.loader.add(abspath).load((): void => {
+			function done(): void {
 				resolve(PIXI.utils.TextureCache[abspath]);
-			});
+			}
+
+			if (PIXI.utils.TextureCache[abspath]) {
+				done();
+			}
+			else {
+				PIXI.loader.add(abspath).load(done);
+			}
 		});
 	}
 
