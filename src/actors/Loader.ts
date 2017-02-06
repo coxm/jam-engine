@@ -22,10 +22,9 @@ export class Loader extends FileLoader {
 			return Promise.resolve(root);
 		}
 		return Promise.all(
-			(typeof root.depends === 'string'
+			typeof root.depends === 'string'
 				?	[this.actorDef(root.depends)]
 				:	root.depends.map(this.actorDef.bind(this))
-			)
 		)
 		.then((defs: PartialActorDef[]): ActorDef => {
 			defs.reverse();
