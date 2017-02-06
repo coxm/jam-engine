@@ -33,8 +33,8 @@ export function num(val: Object | Function | null | undefined): number {
 		case undefined:
 			return UNDEFINED_NUM;
 		default:
-			return (<any> val)[hashKey] || (
-				(<any> val)[hashKey] = ++counter
+			return (<any> val)[hashNumKey] || (
+				(<any> val)[hashNumKey] = ++counter
 			);
 	}
 }
