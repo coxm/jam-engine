@@ -62,36 +62,11 @@ describe("isDown", (): void => {
 		}
 	});
 
-	it("(complicated example)", (): void => {
-		const keys: any = {};
-		setKeyDown(KeyCode.ArrowDown, keys.ArrowDown = true);
-		setKeyDown(KeyCode.ArrowRight, keys.ArrowRight = true);
-		setKeyDown(KeyCode.Escape, keys.Escape = true);
-
-		let count: number = 0;
-		function check(): void {
-			++count;
-			let error: string = '';
-			for (let i: number = 0; i < KEYS_MAX; ++i) {
-				if (isDown(i) !== !!keys[i]) {
-					error =
-						`Expected isDown(${i}) to be ${keys[i]} (${count})`;
-					break;
-				}
-			}
-			expect(error).toBeFalsy(error);
-		}
-
-		check();
-
-		setKeyDown(KeyCode.ArrowDown, keys.ArrowDown = false);
-		setKeyDown(KeyCode.ArrowUp, keys.ArrowUp = false);
-		setKeyDown(KeyCode.Pause, keys.Pause = true);
-		check();
-
-		setKeyDown(KeyCode.ArrowLeft, keys.ArrowLeft = true);
-		setKeyDown(KeyCode.AltGraph, keys.AltGraph = true);
-		setKeyDown(KeyCode.ArrowLeft, keys.ArrowLeft = false);
-		check();
+	it("(example 0)", (): void => {
+		setKeyDown(KeyCode.ArrowDown, true);
+		setKeyDown(KeyCode.ArrowUp, true);
+		setKeyDown(KeyCode.ArrowDown, false);
+		expect(isDown(KeyCode.ArrowDown)).toBe(false);
+		expect(isDown(KeyCode.ArrowUp)).toBe(true);
 	});
 });
