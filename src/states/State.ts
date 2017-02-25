@@ -2,10 +2,15 @@ import {noop} from '../util/misc';
 
 
 export interface StateOptions {
+	/** The State's name. */
 	name: string;
+	/** Optionally specify a parent of the state. */
 	parent?: State;
-	startChildrenImmediately?: boolean;
+	/** Whether to automatically start children (defaults to `false`). */
+	autoStartChildren?: boolean;
+	/** Whether to end when children are finished (default `false`). */
 	endWhenChildrenDone?: boolean;
+	/** Whether this state should begin in paused mode. */
 	paused?: boolean;
 }
 
@@ -17,9 +22,19 @@ export interface StateOptions {
  * is injected by subclassing and overriding certain methods.
  */
 export class State {
-	static current(): State {
-		return State.currentState;
-	}
+	/** Get the current state. */
+	static current: (this: typeof State) => State;
+
+	/** Pause the current state, if any. */
+	static pauseCurrent: (this: typeof State) => void;
+
+	/** Unpause the current state, if any. */
+	static unpauseCurrent: (this: typeof State) => void;
+
+	/** End the current state, if any. */
+	static endCurrent: (this: typeof State) => void;
+
+	private static readonly parents = new WeakMap<State, State>();
 
 	static onAnyPreloadBegin: (state: State) => void = noop;
 	static onAnyPreloadEnd: (state: State, data: any) => void = noop;
@@ -30,14 +45,14 @@ export class State {
 
 	readonly name: string;
 
-	private parentState: State | null;
+	private parentName: string;
 
 	private childStates: State[];
 
 	private static currentState: State;
 
 	private currentChild: number;
-	private startChildrenImmediately: boolean;
+	private autoStartChildren: boolean;
 	private endWhenChildrenDone: boolean;
 	private preloaded: Promise<any> | null;
 	private running: boolean;
@@ -47,30 +62,30 @@ export class State {
 		this.name = options.name;
 		this.childStates = [];
 		this.currentChild = -1;
-		this.parentState = options.parent || null;
-		this.startChildrenImmediately = !!options.startChildrenImmediately;
+		this.autoStartChildren = !!options.autoStartChildren;
 		this.endWhenChildrenDone = !!options.endWhenChildrenDone;
 		this.preloaded = null;
 		this.running = false;
 		this.paused = !!options.paused;
+		State.parents.set(this, options.parent);
 	}
 
-	get parent(): State|null {
-		return this.parentState;
+	get parent(): State|undefined {
+		return State.parents.get(this);
 	}
 
-	isPaused(): boolean {
+	get isPaused(): boolean {
 		return this.paused;
 	}
 
-	isRunning(): boolean {
+	get isRunning(): boolean {
 		return this.running;
 	}
 
 	preload(): Promise<any> {
 		State.onAnyPreloadBegin(this);
 		return this.preloaded || (
-			this.preloaded = this.doPreload().then(
+			this.preloaded = Promise.resolve(this.doPreload()).then(
 				<Data>(data: Data): Data => {
 					State.onAnyPreloadEnd(this, data);
 					return data;
@@ -79,19 +94,8 @@ export class State {
 		);
 	}
 
-	start(): void {
-		if (State.currentState && !State.currentState.isAncestorOf(this)) {
-			State.currentState.end();
-		}
-		State.currentState = this;
-		this.preload().then((preloadData: any): void => {
-			State.onAnyStart(this, preloadData);
-			this.onStart(preloadData);
-			this.running = true;
-			if (this.startChildrenImmediately) {
-				this.nextChild();
-			}
-		});
+	start(): Promise<void> {
+		return this.preload().then(this.doStart.bind(this));
 	}
 
 	pause(): void {
@@ -125,30 +129,38 @@ export class State {
 	}
 
 	end(): void {
-		if (this.parentState === null) {
-			throw new Error("Ending state with no parent");
+		if (this.running) {
+			this.running = false;
+			State.onAnyEnd(this);
+			this.onEnd();
+			const parent = this.parent;
+			if (parent) {
+				parent.onChildEnd(this);
+			}
 		}
-		this.running = false;
-		State.onAnyEnd(this);
-		this.onEnd();
-		this.parentState.onChildEnd(this);
 	}
 
 	isAncestorOf(state: State): boolean {
-		let parent: State|null = state.parent;
-		while (parent) {
-			if (this === parent) {
+		let next: State|undefined = state.parent;
+		while (next) {
+			if (this === next) {
 				return true;
 			}
-			parent = parent.parentState;
+			next = next.parent;
 		}
 		return false;
 	}
 
+	/**
+	 * Descend into a child state.
+	 *
+	 * This state keeps running, but the child becomes the active state.
+	 */
 	startChild(child: string|State): void {
 		(typeof child === 'string' ? this.child(child) : child).start();
 	}
 
+	/** Get a child state, looking it up by name. */
 	child(name: string): State {
 		const state: State|undefined = this.childIfExists(name);
 		if (!state) {
@@ -157,13 +169,14 @@ export class State {
 		return state;
 	}
 
+	/** Get a child state, looking it up by name. */
 	childIfExists(name: string): State|undefined {
 		return this.childStates.find((c: State): boolean => c.name === name);
 	}
 
 	addChild(child: State): void {
 		this.childStates.push(child);
-		child.parentState = this;
+		child.parentName = this.name;
 	}
 
 	removeChild(child: string|State): void {
@@ -192,43 +205,73 @@ export class State {
 		return this.childStates.map(fn);
 	}
 
-	jumpToChild(child: string|State): void {
-		(typeof child === 'string' ? this.child(child) : child).start();
+	/** Pre-load any assets required; can be overridden. */
+	protected doPreload(): any {
 	}
 
-	protected doPreload(): Promise<any> {
-		return Promise.resolve(null);
-	}
-
+	/** Do the actual work of starting this state; can be overridden. */
 	protected onStart(preloadData: any): void {
 	}
 
+	/** Do the actual work of pausing this state; can be overridden. */
 	protected onPause(): void {
 	}
 
+	/** Do the actual work of un-pausing this state; can be overridden. */
 	protected onUnpause(): void {
 	}
 
+	/** Do the actual work of ending this state; can be overridden. */
 	protected onEnd(): void {
 	}
 
+	/** React to a child ending; can be overridden. */
 	protected onChildEnd(child: State): void {
-		if (this.startChildrenImmediately) {
-			this.nextChild();
-		}
+		++this.currentChild;
+		this.atCurrentChild();
 	}
 
-	private nextChild(): void {
-		if (
-			++this.currentChild === this.children.length &&
-			this.endWhenChildrenDone
-		) {
-			this.end();
+	/** Cause this state to start. */
+	private doStart(preloadData: any): void {
+		if (State.currentState && !State.currentState.isAncestorOf(this)) {
+			State.currentState.end();
 		}
-		const next: State = this.childStates[this.currentChild];
-		if (!next) {
-			throw new Error("No child states remaining");
+		State.currentState = this;
+		State.onAnyStart(this, preloadData);
+		this.onStart(preloadData);
+		this.running = true;
+		this.atCurrentChild();
+	}
+
+	/** Take action when at the next child. */
+	private atCurrentChild(): void {
+		if (!this.childStates[this.currentChild]) {
+			if (this.endWhenChildrenDone) {
+				this.end();
+			}
 		}
-		next.start();
+		else if (this.autoStartChildren) {
+			this.childStates[this.currentChild].start();
+		}
 	}
 }
+
+
+State.current = function(this: any): State {
+	return this.currentState;
+};
+
+
+State.pauseCurrent = function(this: any): void {
+	this.currentState && this.currentState.pause();
+};
+
+
+State.unpauseCurrent = function(this: any): void {
+	this.currentState && this.currentState.unpause();
+};
+
+
+State.endCurrent = function(this: any): void {
+	this.currentState && this.currentState.end();
+};
