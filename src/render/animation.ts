@@ -29,8 +29,8 @@ export interface SpriteSheetDef {
 
 export function animations(def: SpriteSheetDef)
 	:	{
-		[key: string]: PIXI.extras.MovieClip;
-		[key: number]: PIXI.extras.MovieClip;
+		[key: string]: PIXI.extras.AnimatedSprite;
+		[key: number]: PIXI.extras.AnimatedSprite;
 	}
 {
 	return dictMap(
@@ -48,7 +48,7 @@ export function animation(
 	frameWidth: number,
 	frameHeight: number
 )
-	: PIXI.extras.MovieClip
+	: PIXI.extras.AnimatedSprite
 {
 	const rects: PIXI.Rectangle[] = [...frames(
 		def.frames,
@@ -63,7 +63,7 @@ export function animation(
 		}
 	}
 
-	const anim = new (<any> PIXI.extras).MovieClip(
+	const anim = new PIXI.extras.AnimatedSprite(
 		rects.map(
 			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
 		)
