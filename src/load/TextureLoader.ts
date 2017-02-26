@@ -38,25 +38,30 @@ function fetchTextures(
 )
 	: void
 {
-	let count: number = 0;
-	for (let path of paths) {
-		if (!PIXI.utils.TextureCache[path]) {
-			PIXI.loader.add(path);
-			++count;
-		}
-	}
-
 	function done(): void {
 		success(paths.map(path => PIXI.utils.TextureCache[path]));
 	}
 
-	if (count === 0) {
-		return done();
+	let numRemaining: number = 0;
+	function onComplete(): void {
+		if (--numRemaining === 0) {
+			done();
+		}
+	}
+
+	for (let url of paths) {
+		if (!PIXI.utils.TextureCache[url]) {
+			++numRemaining;
+			PIXI.loader.add({
+				url,
+				onComplete,
+			});
+		}
 	}
 
 	// onError missing from definitions.
 	(<any> PIXI.loader).onError.add(failure);
-	PIXI.loader.load(done);
+	PIXI.loader.load();
 }
 
 
