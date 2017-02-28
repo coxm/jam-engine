@@ -71,11 +71,20 @@ export class TextureLoader extends FileLoader {
 	}
 
 	texture(relpath: string): Promise<PIXI.Texture> {
-		const abspath: string = this.abspath(relpath);
+		return this.textureAbs(this.abspath(relpath));
+	}
+
+	textureAbs(abspath: string): Promise<PIXI.Texture> {
 		return loadTextures([abspath]).then(textures => textures[0]);
 	}
 
 	textures(...relpaths: string[]): Promise<PIXI.Texture[]> {
-		return loadTextures(relpaths.map(rel => this.abspath(rel)));
+		return this.texturesAbs(
+			...relpaths.map(rel => this.abspath(rel))
+		);
+	}
+
+	texturesAbs(...abspaths: string[]): Promise<PIXI.Texture[]> {
+		return loadTextures(abspaths);
 	}
 }
