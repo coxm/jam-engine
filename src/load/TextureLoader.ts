@@ -59,6 +59,10 @@ function fetchTextures(
 		}
 	}
 
+	if (numRemaining === 0) {
+		return done();
+	}
+
 	// onError missing from definitions.
 	(<any> PIXI.loader).onError.add(failure);
 	PIXI.loader.load();
