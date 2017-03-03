@@ -79,6 +79,12 @@ export function onKeyEvent(
 }
 
 
+const allKeyEvents = new WeakMap<HTMLElement | Document, {
+	up: EventListener;
+	down: EventListener;
+}>();
+
+
 /**
  * Initialise key event listening for the entire document.
  *
@@ -105,12 +111,30 @@ export function initKeyEvents(
 	if (!target) {
 		target = document;
 	}
-	target.addEventListener(
-		'keydown',
-		onKeyEvent.bind(null, keydown, condense, true)
-	);
-	target.addEventListener(
-		'keyup',
-		onKeyEvent.bind(null, keyup, condense, false)
-	);
+	const down = onKeyEvent.bind(null, keydown, condense, true);
+	const up = onKeyEvent.bind(null, keyup, condense, false);
+	target.addEventListener('keydown', down);
+	target.addEventListener('keyup', up);
+	allKeyEvents.set(target, {down, up});
+}
+
+
+/**
+ * Remove key event handlers set by {@link initKeyEvents}.
+ */
+export function stopKeyEvents(
+	target?: HTMLElement | Document | undefined | null,
+	condense?: (kc: KeyCode) => number
+)
+	: void
+{
+	if (!target) {
+		target = document;
+	}
+	const handlers = allKeyEvents.get(target);
+	if (handlers) {
+		target.removeEventListener('keydown', handlers.down);
+		target.removeEventListener('keyup', handlers.up);
+		allKeyEvents.delete(target);
+	}
 }
