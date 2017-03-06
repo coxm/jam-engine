@@ -12,6 +12,8 @@ export interface StateOptions {
 	endWhenChildrenDone?: boolean;
 	/** Whether this state should begin in paused mode. */
 	paused?: boolean;
+	/** Optionally pass in an array of children. */
+	children?: State[];
 }
 
 
@@ -60,7 +62,7 @@ export class State {
 
 	constructor(options: StateOptions) {
 		this.name = options.name;
-		this.childStates = [];
+		this.childStates = options.children || [];
 		this.currentChild = -1;
 		this.autoStartChildren = !!options.autoStartChildren;
 		this.endWhenChildrenDone = !!options.endWhenChildrenDone;
