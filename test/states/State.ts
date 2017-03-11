@@ -153,7 +153,6 @@ describe("state callback", (): void => {
 		let spy: jasmine.Spy = <any> null;
 
 		beforeEach((): void => {
-			State.endCurrent();
 			state = new State({name: 'onAnyEnd test'});
 			spy = spyOn(State, 'onAnyEnd');
 		});
@@ -213,20 +212,6 @@ describe("State#start", (): void => {
 		state = new State({name: 'State#start test'});
 	});
 
-	it("ends then starts the state if already running", (done): void => {
-		state.start()
-		.then((): Promise<jasmine.Spy[]> => {
-			const onStart = spyOn(state, 'onStart');
-			const onEnd = spyOn(state, 'onEnd');
-
-			return state.start().then(() => [onStart, onEnd]);
-		})
-		.then(([onStart, onEnd]): void => {
-			expect(onStart).toHaveBeenCalledTimes(1);
-			expect(onEnd).toHaveBeenCalledTimes(1);
-			done();
-		});
-	});
 	it("doesn't call onStart before preload completes", (done): void => {
 		spyOn(state, 'doPreload').and.returnValue(neverResolve());
 		const onStart = spyOn(state, 'onStart');
@@ -259,19 +244,6 @@ describe("State#end", (): void => {
 		state.start().then((): void => {
 			state.end();
 			expect(onEnd).toHaveBeenCalled();
-			done();
-		});
-	});
-	it("alerts the parent if any", (done): void => {
-		const parentState = new State({name: 'State#end test (parent)'});
-		const child = new State({
-			name: 'State#end test',
-			parent: parentState,
-		});
-		const onChildEnd = spyOn(parentState, 'onChildEnd');
-		child.start().then((): void => {
-			child.end();
-			expect(onChildEnd).toHaveBeenCalledWith(child);
 			done();
 		});
 	});
