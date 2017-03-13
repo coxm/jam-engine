@@ -57,6 +57,13 @@ export interface AddOptions<State, Trigger> {
 }
 
 
+export interface TriggerEvent<State, Trigger> {
+	trigger: Trigger;
+	old: State;
+	new: State;
+}
+
+
 export function endState(state: ManagedState): void {
 	state.end();
 }
@@ -88,8 +95,10 @@ let idCounter: number = -1;
 
 
 export class Manager<State extends ManagedState, Trigger> {
-	private nodes = new Map<number | string, Node<State, Trigger>>();
+	preTrigger: (ev: TriggerEvent<State, Trigger>) => void;
+	postTrigger: (ev: TriggerEvent<State, Trigger>) => void;
 
+	private nodes = new Map<number | string, Node<State, Trigger>>();
 	private curr: Node<State, Trigger>;
 
 	get current(): State {
@@ -185,10 +194,18 @@ export class Manager<State extends ManagedState, Trigger> {
 						break;
 				}
 			}
-			const next: Node<State, Trigger> = this.getNode(nextID);
-			transition.exit(this.curr.state, trigger);
+			const next = this.getNode(nextID);
+			const ev = {
+				new: next.state,
+				old: this.curr.state,
+				trigger,
+			};
+			this.preTrigger(ev);
+			transition.exit(ev.old, trigger);
 			this.curr = next;
-			return next.state.start();
+			return next.state.start().then((): void => {
+				this.postTrigger(ev);
+			});
 		}
 		catch (err) {
 			return Promise.reject(err);
