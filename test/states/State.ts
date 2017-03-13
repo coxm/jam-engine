@@ -228,6 +228,12 @@ describe("State#start", (): void => {
 			done();
 		});
 	});
+	it("sets the isRunning flag", (done): void => {
+		state.start().then((): void => {
+			expect(state.isRunning).toBe(true);
+			done();
+		});
+	});
 });
 
 
@@ -244,6 +250,14 @@ describe("State#end", (): void => {
 		state.start().then((): void => {
 			state.end();
 			expect(onEnd).toHaveBeenCalled();
+			done();
+		});
+	});
+	describe("unsets the isRunning flag", (): void => {
+		const state = new State({name: 'State#end test'});
+		state.start().then((done): void => {
+			state.end();
+			expect(state.isRunning).toBe(false);
 			done();
 		});
 	});
