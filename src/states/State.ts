@@ -9,6 +9,14 @@ export interface StateOptions {
 }
 
 
+export const enum StateFlags {
+	preloaded = 1,
+	running = 2,
+	paused = 4,
+	attached = 8,
+}
+
+
 /**
  * Basic state class.
  *
@@ -29,6 +37,8 @@ export class State {
 	private running: boolean;
 	private paused: boolean;
 
+	protected flags: number = 0;
+
 	constructor(options: StateOptions) {
 		this.name = options.name;
 		this.preloaded = null;
@@ -36,12 +46,20 @@ export class State {
 		this.paused = !!options.paused;
 	}
 
+	get isPreloaded(): boolean {
+		return 0 !== (this.flags & StateFlags.preloaded);
+	}
+
 	get isPaused(): boolean {
-		return this.paused;
+		return 0 !== (this.flags & StateFlags.paused);
 	}
 
 	get isRunning(): boolean {
-		return this.running;
+		return 0 !== (this.flags & StateFlags.running);
+	}
+
+	get isAttached(): boolean {
+		return 0 !== (this.flags & StateFlags.attached);
 	}
 
 	preload(): Promise<any> {
@@ -50,6 +68,7 @@ export class State {
 			this.preloaded = Promise.resolve(this.doPreload()).then(
 				<Data>(data: Data): Data => {
 					State.onAnyPreloadEnd(this, data);
+					this.flags |= StateFlags.preloaded;
 					return data;
 				}
 			)
@@ -61,18 +80,18 @@ export class State {
 	}
 
 	pause(): void {
-		if (!this.paused) {
+		if (!(this.flags & StateFlags.paused)) {
 			State.onAnyPause(this);
 			this.onPause();
-			this.paused = true;
+			this.flags |= StateFlags.paused;
 		}
 	}
 
 	unpause(): void {
-		if (this.paused) {
+		if (this.flags & StateFlags.paused) {
 			State.onAnyUnpause(this);
 			this.onUnpause();
-			this.paused = false;
+			this.flags &= ~StateFlags.paused;
 		}
 	}
 
@@ -82,7 +101,7 @@ export class State {
 	 * @returns true if paused after this call; otherwise false.
 	 */
 	togglePause(): boolean {
-		if (this.paused) {
+		if (this.flags & StateFlags.paused) {
 			this.unpause();
 			return false;
 		}
@@ -91,10 +110,25 @@ export class State {
 	}
 
 	end(): void {
-		if (this.running) {
-			this.running = false;
+		this.detach();
+		if (this.flags & StateFlags.running) {
 			State.onAnyEnd(this);
+			this.flags &= ~StateFlags.running
 			this.onEnd();
+		}
+	}
+
+	attach(): void {
+		if (!(this.flags & StateFlags.attached)) {
+			this.onAttach();
+			this.flags |= StateFlags.attached;
+		}
+	}
+
+	detach(): void {
+		if (this.flags & StateFlags.attached) {
+			this.onDetach();
+			this.flags &= ~StateFlags.attached;
 		}
 	}
 
@@ -118,10 +152,18 @@ export class State {
 	protected onEnd(): void {
 	}
 
+	/** Do the actual work of attaching this state; can be overridden. */
+	protected onAttach(): void {
+	}
+
+	/** Do the actual work of detaching this state; can be overridden. */
+	protected onDetach(): void {
+	}
+
 	/** Cause this state to start. */
 	private doStart(preloadData: any): void {
 		State.onAnyStart(this, preloadData);
 		this.onStart(preloadData);
-		this.running = true;
+		this.flags |= StateFlags.running;
 	}
 }
