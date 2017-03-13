@@ -1,139 +1,239 @@
-import {State as StateBase} from './State';
+import {noop} from '../util/misc';
+
+import {Relation} from './Relation';
 
 
-export interface PreTriggerEvent<State, Trigger> {
-	trigger: Trigger;
-	current: State;
-	next: State;
+export const enum EndCondition {
+	none = 0,
+	detach = 1,
+	end = 2
 }
 
 
-export interface PostTriggerEvent<State, Trigger> {
-	trigger: Trigger;
-	prev: State;
-	current: State;
+export interface ManagedState {
+	readonly name: string;
+
+	start(): Promise<void>;
+	end(): void;
+
+	attach(): void;
+	detach(): void;
 }
 
 
-export interface PreTriggerHandler<State, Trigger> {
-	(event: PreTriggerEvent<State, Trigger>): void | false;
+export interface TransitionBase<State, Trigger> {
+	/** The trigger for this transition. */
+	readonly trigger: Trigger;
+	/** How to deal with the outgoing state. */
+	readonly exit: EndCondition | ((state: State, trigger: Trigger) => void);
 }
 
 
-export interface PostTriggerHandler<State, Trigger> {
-	(event: PostTriggerEvent<State, Trigger>): void;
+export interface RelationTransition<State, Trigger>
+	extends TransitionBase<State, Trigger>
+{
+	/** The status of the new state in relation to the old. */
+	readonly rel: Relation;
 }
 
 
-interface TriggerDict {
-	[sourceName: string]: string;
+export interface IDTransition<State, Trigger>
+	extends TransitionBase<State, Trigger>
+{
+	/** The ID of the new state. */
+	readonly id: number | string;
 }
 
 
-export class Manager<State extends StateBase, Trigger> {
-	preTrigger: PreTriggerHandler<State, Trigger>;
-	postTrigger: PostTriggerHandler<State, Trigger>;
+export type Transition<S, T> = (
+	RelationTransition<S, T> |
+	IDTransition<S, T>
+);
 
-	private readonly triggers = new Map<Trigger, TriggerDict>();
-	private readonly states = new Map<string, State>();
 
-	constructor(private curr: State) {
-	}
+export interface AddOptions<State, Trigger> {
+	readonly children?: number[];
+	readonly transitions?: Transition<State, Trigger>[];
+}
+
+
+export function endState(state: ManagedState): void {
+	state.end();
+}
+
+
+export function detachState(state: ManagedState): void {
+	state.detach();
+}
+
+
+interface InternalTransition<State, Trigger> {
+	readonly trigger: Trigger;
+	readonly exit: (state: State, trigger: Trigger) => void;
+	readonly id?: number;
+	readonly rel?: Relation;
+}
+
+
+interface Node<State, Trigger> {
+	readonly id: number;
+	readonly state: State;
+	children: (number | string)[];
+	transitions: InternalTransition<State, Trigger>[];
+	parent?: number | string;
+}
+
+
+let idCounter: number = -1;
+
+
+export class Manager<State extends ManagedState, Trigger> {
+	private nodes = new Map<number | string, Node<State, Trigger>>();
+
+	private curr: Node<State, Trigger>;
 
 	get current(): State {
-		return this.curr;
+		return this.curr.state;
 	}
 
-	keys(): IterableIterator<string> {
-		return this.states.keys();
+	at(id: number | string): State {
+		return this.getNode(id).state;
 	}
 
-	values(): IterableIterator<State> {
-		return this.states.values();
-	}
-
-	entries(): IterableIterator<[string, State]> {
-		return this.states.entries();
-	}
-
-	add(state: State): void {
-		if (this.states.has(state.name)) {
-			throw new Error(`State '${state.name}' already exists`);
-		}
-		this.states.set(state.name, state);
-	}
-
-	has(name: string): boolean {
-		return this.states.has(name);
-	}
-
-	jump(name: string): Promise<void> {
-		const next = this.states.get(name);
-		if (!next) {
-			throw new Error(`No '${name}' state`);
-		}
-		return this.doJump(next);
-	}
-
-	on(name: string, trigger: Trigger, next: string): void {
-		let dict = this.triggers.get(trigger);
-		if (!dict) {
-			this.triggers.set(trigger, dict = {});
-		}
-		dict[name] = next;
-	}
-
-	onTrigger(trigger: Trigger, successors: {[name: string]: string;}): void {
-		const dict = this.triggers.get(trigger);
-		if (dict) {
-			Object.assign(dict, successors);
+	add(state: State, options?: AddOptions<State, Trigger>): number {
+		const id: number = ++idCounter;
+		let children: number[];
+		let transitions: InternalTransition<State, Trigger>[];
+		if (options) {
+			children = options.children ? options.children.slice() : [];
+			transitions = (options.transitions
+				? options.transitions.map(t => this.createTransition(t))
+				: []
+			);
 		}
 		else {
-			this.triggers.set(trigger, Object.assign({}, successors));
+			children = [];
+			transitions = [];
 		}
+		const node: Node<State, Trigger> = {
+			id,
+			state,
+			children,
+			transitions,
+		};
+		this.nodes.set(id, node);
+		this.nodes.set(state.name, node);
+		return id;
 	}
 
-	fire(trigger: Trigger): Promise<boolean> {
-		const dict = this.triggers.get(trigger);
-		if (!dict) {
-			throw new Error(`Unknown trigger: '${trigger}'`);
+	appendChild(parentID: number | string, childID: number | string): void {
+		if (!this.nodes.has(childID)) {
+			throw new Error(`No such state: ${childID}`);
 		}
+		this.getNode(parentID).children.push(childID);
+		this.getNode(childID).parent = parentID;
+	}
 
-		const nextName = dict[this.current.name];
-		if (!nextName) {
-			throw new Error(
-				`State ${this.current.name} has no ${trigger} event`);
+	appendChildren(parentID: number | string, children: (number | string)[])
+		: void
+	{
+		// Exception safety: check all nodes exist first.
+		const parent = this.getNode(parentID);
+		const childNodes = children.map(id => this.getNode(id));
+		for (let child of childNodes) {
+			child.parent = parentID;
 		}
+		parent.children = parent.children.concat(children);
+	}
 
-		const nextState = this.states.get(nextName);
-		if (!nextState) {
-			throw new Error(`No '${nextName}' state`);
-		}
+	on(id: number | string, transition: Transition<State, Trigger>): void {
+		this.getNode(id).transitions.push(this.createTransition(transition));
+	}
 
-		if (this.preTrigger && (false === this.preTrigger({
-			trigger: trigger,
-			current: this.curr,
-			next: nextState,
-		}))) {
-			return Promise.resolve(false);
-		}
+	onMany(id: number | string, transitions: Transition<State, Trigger>[])
+		: void
+	{
+		const node = this.getNode(id);
+		node.transitions = node.transitions.concat(transitions.map(
+			t => this.createTransition(t)
+		));
+	}
 
-		const oldState = this.curr;
-		return this.doJump(nextState).then((): boolean => {
-			if (this.postTrigger) {
-				this.postTrigger({
-					trigger: trigger,
-					prev: oldState,
-					current: nextState,
-				});
+	trigger(trigger: Trigger): Promise<void> {
+		try {
+			const transition = this.curr.transitions.find(
+				tr => tr.trigger === trigger
+			);
+			if (!transition) {
+				return this.onEmptyTransition();
 			}
-			return true;
-		});
+			let nextID = (<IDTransition<State, Trigger>> transition).id;
+			if (typeof nextID !== 'number') {
+				switch (
+					(<RelationTransition<State, Trigger>> transition).rel
+				) {
+					case Relation.sibling: {
+						const sibs = this.getNode(this.curr.parent!).children;
+						nextID = sibs[sibs.length - 1];
+						break;
+					}
+					case Relation.parent:
+						nextID = this.curr.parent!;
+						break;
+					case Relation.child:
+						nextID = this.curr.children[0];
+						break;
+				}
+			}
+			const next: Node<State, Trigger> = this.getNode(nextID);
+			transition.exit(this.curr.state, trigger);
+			this.curr = next;
+			return next.state.start();
+		}
+		catch (err) {
+			return Promise.reject(err);
+		}
 	}
 
-	private doJump(state: State): Promise<void> {
-		this.curr.end();
-		this.curr = state;
-		return state.start();
+	onEmptyTransition(): Promise<void> {
+		return Promise.resolve();
+	}
+
+	private getNode(id: number | string): Node<State, Trigger> {
+		const node = this.nodes.get(id);
+		if (node) {
+			return node;
+		}
+		throw new Error(`No such state: ${id}`);
+	}
+
+	private createTransition(transition: Transition<State, Trigger>)
+		: InternalTransition<State, Trigger>
+	{
+		let exit: (state: State, trigger: Trigger) => void;
+		switch (transition.exit) {
+			case undefined:
+				exit = (
+					Relation.child ===
+						(<InternalTransition<State, Trigger>> transition).rel
+					? detachState
+					: endState
+				);
+				break;
+			case EndCondition.none:
+				exit = noop;
+				break;
+			case EndCondition.detach:
+				exit = detachState;
+				break;
+			case EndCondition.end:
+				exit = endState;
+				break;
+			default:
+				// Assume it's a function, in which case we keep it.
+				exit = transition.exit;
+				break;
+		}
+		return Object.assign({}, transition, {exit});
 	}
 }
