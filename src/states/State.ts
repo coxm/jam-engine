@@ -37,7 +37,7 @@ export class State {
 	private running: boolean;
 	private paused: boolean;
 
-	protected flags: number = 0;
+	protected flags: number = StateFlags.attached;
 
 	constructor(options: StateOptions) {
 		this.name = options.name;

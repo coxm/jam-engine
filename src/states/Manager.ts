@@ -1,18 +1,10 @@
 import {noop} from '../util/misc';
 
 import {Relation} from './Relation';
-
-
-export const enum EndCondition {
-	none = 0,
-	detach = 1,
-	end = 2
-}
+import {ExitType} from './ExitType';
 
 
 export interface ManagedState {
-	readonly name: string;
-
 	start(): Promise<void>;
 	end(): void;
 
@@ -21,11 +13,14 @@ export interface ManagedState {
 }
 
 
+export type Alias = number | string | symbol;
+
+
 export interface TransitionBase<State, Trigger> {
-	/** The trigger for this transition. */
+	/** The trigger for this transition or `null` if caused by a jump. */
 	readonly trigger: Trigger;
 	/** How to deal with the outgoing state. */
-	readonly exit: EndCondition | ((state: State, trigger: Trigger) => void);
+	readonly exit: ExitType | ((state: State, trigger: Trigger) => void);
 }
 
 
@@ -41,7 +36,7 @@ export interface IDTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
 	/** The ID of the new state. */
-	readonly id: number | string;
+	readonly id: Alias;
 }
 
 
@@ -52,15 +47,16 @@ export type Transition<S, T> = (
 
 
 export interface AddOptions<State, Trigger> {
-	readonly children?: number[];
+	readonly alias?: string | symbol;
+	readonly children?: (Alias | State)[];
 	readonly transitions?: Transition<State, Trigger>[];
 }
 
 
 export interface TriggerEvent<State, Trigger> {
-	trigger: Trigger;
-	old: State;
-	new: State;
+	readonly trigger: Trigger | null;
+	readonly old: State;
+	readonly new: State;
 }
 
 
@@ -85,9 +81,9 @@ interface InternalTransition<State, Trigger> {
 interface Node<State, Trigger> {
 	readonly id: number;
 	readonly state: State;
-	children: (number | string)[];
+	children: Alias[];
 	transitions: InternalTransition<State, Trigger>[];
-	parent?: number | string;
+	parent?: Alias;
 }
 
 
@@ -98,74 +94,139 @@ export class Manager<State extends ManagedState, Trigger> {
 	preTrigger: (ev: TriggerEvent<State, Trigger>) => void;
 	postTrigger: (ev: TriggerEvent<State, Trigger>) => void;
 
-	private nodes = new Map<number | string, Node<State, Trigger>>();
+	private nodes = new Map<Alias, Node<State, Trigger>>();
+	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger>;
+
+	start(key: Alias): Promise<void> {
+		if (this.curr) {
+			throw new Error("Already initialised");
+		}
+		this.curr = this.getNode(key);
+		return this.curr.state.start();
+	}
 
 	get current(): State {
 		return this.curr.state;
 	}
 
-	at(id: number | string): State {
-		return this.getNode(id).state;
+	id(key: Alias): number {
+		return this.getNode(key).id;
+	}
+
+	at(key: Alias): State {
+		return this.getNode(key).state;
+	}
+
+	has(key: Alias): boolean {
+		return this.nodes.has(key);
+	}
+
+	*keys(): IterableIterator<number> {
+		for (let node of this.list) {
+			yield node.id;
+		}
+	}
+
+	*values(): IterableIterator<State> {
+		for (let node of this.list) {
+			yield node.state;
+		}
+	}
+
+	*entries(): IterableIterator<[number, State]> {
+		for (let node of this.list) {
+			yield [node.id, node.state];
+		}
+	}
+
+	*children(key: Alias): IterableIterator<[Alias, State]> {
+		const parent = this.getNode(key);
+		for (let id of parent.children) {
+			yield [id, this.getNode(id).state];
+		}
+	}
+
+	*siblings(key: Alias): IterableIterator<[Alias, State]> {
+		const parent = this.getParent(key);
+		for (let id of parent.children) {
+			yield [id, this.getNode(id).state];
+		}
+	}
+
+	*ancestors(key: Alias, strict: boolean = false)
+		: IterableIterator<[Alias, State]>
+	{
+		let node: Node<State, Trigger> = this.getNode(key);
+		if (!strict) {
+			yield [node.id, node.state];
+		}
+		while (node.parent !== undefined) {
+			node = this.nodes.get(node.parent)!;
+			yield [node.id, node.state];
+		}
+	}
+
+	tryParent(key: Alias): [number, State] | null {
+		const node = this.getNode(key);
+		const parent = this.getNode(node.parent!)!;
+		return node ? [parent.id, parent.state] : null;
 	}
 
 	add(state: State, options?: AddOptions<State, Trigger>): number {
-		const id: number = ++idCounter;
-		let children: number[];
-		let transitions: InternalTransition<State, Trigger>[];
+		const node = this.createNode(state);
+		if (options && options.hasOwnProperty('alias')) {
+			this.nodes.set(options.alias!, node);
+		}
 		if (options) {
-			children = options.children ? options.children.slice() : [];
-			transitions = (options.transitions
-				? options.transitions.map(t => this.createTransition(t))
-				: []
-			);
+			if (options.children) {
+				this.appendChildren(node.id, options.children);
+			}
+			if (options.transitions) {
+				this.onMany(node.id, options.transitions);
+			}
 		}
-		else {
-			children = [];
-			transitions = [];
-		}
-		const node: Node<State, Trigger> = {
-			id,
-			state,
-			children,
-			transitions,
-		};
-		this.nodes.set(id, node);
-		this.nodes.set(state.name, node);
-		return id;
+		return node.id;
 	}
 
-	appendChild(parentID: number | string, childID: number | string): void {
-		if (!this.nodes.has(childID)) {
-			throw new Error(`No such state: ${childID}`);
-		}
-		this.getNode(parentID).children.push(childID);
-		this.getNode(childID).parent = parentID;
+	addTransitions(key: Alias, list: Transition<State, Trigger>[]): void {
+		const node = this.getNode(key);
+		node.transitions = node.transitions.concat(list.map(
+			tr => this.createTransition(tr)
+		));
 	}
 
-	appendChildren(parentID: number | string, children: (number | string)[])
-		: void
-	{
-		// Exception safety: check all nodes exist first.
-		const parent = this.getNode(parentID);
-		const childNodes = children.map(id => this.getNode(id));
-		for (let child of childNodes) {
-			child.parent = parentID;
-		}
-		parent.children = parent.children.concat(children);
+	appendChild(parentKey: Alias, child: Alias | State): number {
+		const parent = this.getNode(parentKey);
+		const childNode = this.getOrCreateNode(child);
+		parent.children.push(childNode.id);
+		childNode.parent = parentKey;
+		return childNode.id;
 	}
 
-	on(id: number | string, transition: Transition<State, Trigger>): void {
-		this.getNode(id).transitions.push(this.createTransition(transition));
+	appendChildren(parentKey: Alias, children: (Alias | State)[]): number[] {
+		const parent = this.getNode(parentKey);
+		return children.map(child => {
+			const childNode = this.getOrCreateNode(child);
+			childNode.parent = parent.id;
+			parent.children.push(childNode.id);
+			return childNode.id;
+		});
 	}
 
-	onMany(id: number | string, transitions: Transition<State, Trigger>[])
-		: void
-	{
-		const node = this.getNode(id);
+	on(key: Alias, transition: Transition<State, Trigger>): void {
+		this.getNode(key).transitions.push(this.createTransition(transition));
+	}
+
+	onMany(key: Alias, transitions: Transition<State, Trigger>[]): void {
+		const node = this.getNode(key);
 		node.transitions = node.transitions.concat(transitions.map(
 			t => this.createTransition(t)
 		));
+	}
+
+	jump(key: Alias): Promise<void> {
+		return this.doJump(key, null, endState);
 	}
 
 	trigger(trigger: Trigger): Promise<void> {
@@ -194,34 +255,72 @@ export class Manager<State extends ManagedState, Trigger> {
 						break;
 				}
 			}
-			const next = this.getNode(nextID);
-			const ev = {
-				new: next.state,
-				old: this.curr.state,
-				trigger,
-			};
-			this.preTrigger(ev);
-			transition.exit(ev.old, trigger);
-			this.curr = next;
-			return next.state.start().then((): void => {
-				this.postTrigger(ev);
-			});
+			return this.doJump(nextID, trigger, transition.exit);
 		}
 		catch (err) {
 			return Promise.reject(err);
 		}
 	}
 
-	onEmptyTransition(): Promise<void> {
+	protected onEmptyTransition(): Promise<void> {
 		return Promise.resolve();
 	}
 
-	private getNode(id: number | string): Node<State, Trigger> {
-		const node = this.nodes.get(id);
+	private doJump(
+		nextID: Alias,
+		trigger: Trigger | null,
+		exit: (state: State, trigger: Trigger | null) => void
+	)
+		: Promise<void>
+	{
+		const next = this.getNode(nextID);
+		const ev = {
+			new: next.state,
+			old: this.curr.state,
+			trigger: trigger,
+		};
+		this.preTrigger(ev);
+		exit(ev.old, trigger);
+		this.curr = next;
+		return next.state.start().then((): void => {
+			this.postTrigger(ev);
+		});
+	}
+
+	private getOrCreateNode(arg: Alias | State): Node<State, Trigger> {
+		return (typeof arg === 'object'
+			?	this.createNode(arg)
+			:	this.getNode(arg)
+		);
+	}
+
+	private createNode(state: State): Node<State, Trigger> {
+		const id = ++idCounter;
+		const node = {
+			id,
+			state,
+			children: [],
+			transitions: [],
+		};
+		this.nodes.set(id, node);
+		this.list.push(node);
+		return node;
+	}
+
+	private getNode(key: Alias): Node<State, Trigger> {
+		const node = this.nodes.get(key);
 		if (node) {
 			return node;
 		}
-		throw new Error(`No such state: ${id}`);
+		throw new Error(`No such state: ${key}`);
+	}
+
+	private getParent(key: Alias): Node<State, Trigger> {
+		const node = this.getNode(key);
+		if (node.parent === undefined) {
+			throw new Error(`State ${key} has no parent`);
+		}
+		return this.getNode(node.parent);
 	}
 
 	private createTransition(transition: Transition<State, Trigger>)
@@ -237,13 +336,13 @@ export class Manager<State extends ManagedState, Trigger> {
 					: endState
 				);
 				break;
-			case EndCondition.none:
+			case ExitType.none:
 				exit = noop;
 				break;
-			case EndCondition.detach:
+			case ExitType.detach:
 				exit = detachState;
 				break;
-			case EndCondition.end:
+			case ExitType.end:
 				exit = endState;
 				break;
 			default:

@@ -253,9 +253,9 @@ describe("State#end", (): void => {
 			done();
 		});
 	});
-	describe("unsets the isRunning flag", (): void => {
+	it("unsets the isRunning flag", (done): void => {
 		const state = new State({name: 'State#end test'});
-		state.start().then((done): void => {
+		state.start().then((): void => {
 			state.end();
 			expect(state.isRunning).toBe(false);
 			done();
