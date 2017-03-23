@@ -30,6 +30,8 @@ export class State {
 	static onAnyPause: (state: State) => void = noop;
 	static onAnyUnpause: (state: State) => void = noop;
 	static onAnyEnd: (state: State) => void = noop;
+	static onAnyAttach: (state: State) => void = noop;
+	static onAnyDetach: (state: State) => void = noop;
 
 	readonly name: string;
 
@@ -120,6 +122,7 @@ export class State {
 
 	attach(): void {
 		if (!(this.flags & StateFlags.attached)) {
+			State.onAnyAttach(this);
 			this.onAttach();
 			this.flags |= StateFlags.attached;
 		}
@@ -127,6 +130,7 @@ export class State {
 
 	detach(): void {
 		if (this.flags & StateFlags.attached) {
+			State.onAnyDetach(this);
 			this.onDetach();
 			this.flags &= ~StateFlags.attached;
 		}
