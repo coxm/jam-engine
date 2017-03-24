@@ -10,6 +10,7 @@ export interface StateOptions {
 
 
 export const enum StateFlags {
+	none = 0,
 	preloaded = 1,
 	running = 2,
 	paused = 4,
@@ -39,7 +40,7 @@ export class State {
 	private running: boolean;
 	private paused: boolean;
 
-	protected flags: number = StateFlags.attached;
+	protected flags: number = StateFlags.none;
 
 	constructor(options: StateOptions) {
 		this.name = options.name;
@@ -167,6 +168,7 @@ export class State {
 	/** Cause this state to start. */
 	private doStart(preloadData: any): void {
 		State.onAnyStart(this, preloadData);
+		this.attach();
 		this.onStart(preloadData);
 		this.flags |= StateFlags.running;
 	}
