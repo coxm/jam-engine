@@ -39,24 +39,34 @@ function createManager(): Manager<State, Trigger> {
 
 
 describe("Manager start method", (): void => {
+	let manager: Manager<State, Trigger>;
+
+	beforeEach((): void => {
+		manager = createManager();
+	});
+
 	it("starts the state", (done): void => {
 		const state = createState();
 		spyOn(state, 'start').and.callThrough();
-		const manager = createManager();
 		const id = manager.add(state);
 		manager.start(id).then((): void => {
 			expect(state.start).toHaveBeenCalledTimes(1);
 			done();
 		});
 	});
+	it("sets the current state", (): void => {
+		const state = createState();
+		const id = manager.add(state);
+		manager.start(id);
+		expect(manager.current).toBe(state);
+	});
 	it("throws if the manager has no such state", (): void => {
 		expect((): void => {
-			createManager().start('not a state');
+			manager.start('not a state');
 		}).toThrow();
 	});
 	it("throws if the manager has already been started", (): void => {
 		const state = createState();
-		const manager = createManager();
 		const id = manager.add(state);
 		manager.start(id);
 		expect((): void => {
@@ -131,6 +141,9 @@ function testChild(init: TestInitialiser): void {
 				const id = manager.id(childKey);
 				expect(keys.indexOf(id)).not.toBeLessThan(0);
 			});
+			it("hasChildren", (): void => {
+				expect(manager.hasChildren(parentKey)).toBe(true);
+			});
 		});
 		describe("whose parent can be accessed via", (): void => {
 			it("tryParent", (): void => {
@@ -144,6 +157,10 @@ function testChild(init: TestInitialiser): void {
 					[childKey, child],
 					[parentKey, parent]
 				]);
+
+				expect([...manager.ancestors(childKey, true)]).toEqual([
+					[parentKey, parent]
+				]);
 			});
 		});
 	});
@@ -155,6 +172,14 @@ describe("Manager add method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
+	});
+
+	it("sets an alias if provided", (): void => {
+		const state = createState();
+		const alias = 'test-alias';
+		manager.add(state, {alias});
+		expect(manager.at(alias)).toBe(state);
+		expect(manager.has(alias)).toBe(true);
 	});
 
 	describe("adds a state which can be", (): void => {
@@ -252,5 +277,52 @@ describe("Manager appendChild method", (): void => {
 				childKey,
 			};
 		});
+	});
+});
+
+
+describe("Manager count method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let state: State;
+
+	beforeEach((): void => {
+		manager = createManager();
+		manager.add(createState());
+		state = createState();
+	});
+
+	it("returns the number of times a state is included", (): void => {
+		expect(manager.count(state)).toBe(0);
+		manager.add(state);
+		expect(manager.count(state)).toBe(1);
+		manager.add(state);
+		expect(manager.count(state)).toBe(2);
+		manager.add(state);
+		expect(manager.count(state)).toBe(3);
+	});
+});
+
+
+describe("Manager isUnique method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let state: State;
+
+	beforeEach((): void => {
+		manager = createManager();
+		manager.add(createState());
+		state = createState();
+	});
+
+	it("returns false if the manager has no such state", (): void => {
+		expect(manager.isUnique(state)).toBe(false);
+	});
+	it("returns true if the manager has a unique such state", (): void => {
+		manager.add(state);
+		expect(manager.isUnique(state)).toBe(true);
+	});
+	it("returns false if the manager has multiple such states", (): void => {
+		manager.add(state);
+		manager.add(state);
+		expect(manager.isUnique(state)).toBe(false);
 	});
 });

@@ -122,6 +122,33 @@ export class Manager<State extends ManagedState, Trigger> {
 		return this.nodes.has(key);
 	}
 
+	hasChildren(key: Alias): boolean {
+		return this.getNode(key).children.length !== 0;
+	}
+
+	isUnique(state: State): boolean {
+		let found = false;
+		for (let i = 0, len = this.list.length; i < len; ++i) {
+			if (this.list[i].state === state) {
+				if (found) {
+					return false;
+				}
+				found = true;
+			}
+		}
+		return found;
+	}
+
+	count(state: State): number {
+		let num = 0;
+		for (let i = 0, len = this.list.length; i < len; ++i) {
+			if (this.list[i].state === state) {
+				++num;
+			}
+		}
+		return num;
+	}
+
 	*keys(): IterableIterator<number> {
 		for (let node of this.list) {
 			yield node.id;
