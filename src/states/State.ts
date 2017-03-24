@@ -4,8 +4,6 @@ import {noop} from '../util/misc';
 export interface StateOptions {
 	/** The State's name. */
 	name: string;
-	/** Whether this state should begin in paused mode. */
-	paused?: boolean;
 }
 
 
@@ -37,16 +35,12 @@ export class State {
 	readonly name: string;
 
 	private preloaded: Promise<any> | null;
-	private running: boolean;
-	private paused: boolean;
 
 	protected flags: number = StateFlags.none;
 
 	constructor(options: StateOptions) {
 		this.name = options.name;
 		this.preloaded = null;
-		this.running = false;
-		this.paused = !!options.paused;
 	}
 
 	get isPreloaded(): boolean {
