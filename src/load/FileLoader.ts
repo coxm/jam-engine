@@ -1,6 +1,6 @@
 import {cache} from './cache';
 
-export const parseJSON = JSON.parse.bind(JSON);
+export const parseJSON: <T>(text: string) => T = JSON.parse.bind(JSON);
 
 
 export interface FileLoaderOptions {
@@ -52,7 +52,9 @@ export class FileLoader {
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
 	json<T>(relpath: string): Promise<T> {
-		return this.text(relpath).then(parseJSON);
+		return this.text(relpath).then(
+			<(text: string) => T> parseJSON
+		);
 	}
 }
 

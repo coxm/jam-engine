@@ -73,7 +73,7 @@ export function detachState(state: ManagedState): void {
 interface InternalTransition<State, Trigger> {
 	readonly trigger: Trigger;
 	readonly exit: (state: State, trigger: Trigger) => void;
-	readonly id?: number;
+	readonly id?: Alias;
 	readonly rel?: Relation;
 }
 
