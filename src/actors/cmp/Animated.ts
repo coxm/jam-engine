@@ -1,6 +1,6 @@
 import {SpriteSheetDef, animations} from 'jam/render/animation';
 
-import {Actor, Component, ComponentDef} from '../Actor';
+import {Actor, ComponentBase, ComponentDef} from '../Actor';
 
 
 export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
@@ -12,7 +12,7 @@ export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
 }
 
 
-export class Animated implements Component {
+export class Animated extends ComponentBase {
 	key: string;
 
 	private readonly anims: {
@@ -22,7 +22,8 @@ export class Animated implements Component {
 
 	private current: PIXI.extras.MovieClip;
 
-	constructor(def: AnimatedDef, public readonly actorID: symbol) {
+	constructor(def: AnimatedDef, actorID: symbol) {
+		super(actorID);
 		this.anims = animations(def);
 		let initial: any = def.initial;
 		if (initial === undefined) {

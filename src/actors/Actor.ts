@@ -25,6 +25,8 @@ export interface Component {
  * `onAdd` and `onRemove` methods.
  */
 export class ComponentBase {
+	key: string;
+
 	constructor(public readonly actorID: symbol) {
 	}
 
