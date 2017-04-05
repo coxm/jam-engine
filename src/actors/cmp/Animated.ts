@@ -1,6 +1,6 @@
 import {SpriteSheetDef, animations} from 'jam/render/animation';
 
-import {Actor, ComponentBase, ComponentDef} from '../Actor';
+import {ComponentBase, ComponentDef} from '../Actor';
 
 
 export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
@@ -61,11 +61,5 @@ export class Animated extends ComponentBase {
 
 	stop(): void {
 		this.current.stop();
-	}
-
-	onAdd(actor: Actor): void {
-	}
-
-	onRemove(actor: Actor): void {
 	}
 }
