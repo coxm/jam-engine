@@ -10,4 +10,6 @@ export const enum KeyAction {
 	strafeLeft = 16,
 	strafeRight = 32,
 	strafe = 48,
+
+	use = 64,
 }
