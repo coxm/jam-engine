@@ -1,4 +1,5 @@
-import {Manager, ManagedState as State, Alias} from 'jam/states/Manager';
+import {State, state as createState} from 'jam/states/State';
+import {Manager, Alias} from 'jam/states/Manager';
 
 
 enum Trigger {
@@ -6,74 +7,9 @@ enum Trigger {
 }
 
 
-const defaults: State = {
-	start(this: State): Promise<void> {
-		return (<any> this)._startPromise || (
-			(<any> this)._startPromise = Promise.resolve()
-		);
-	},
-	end(this: State): void {
-	},
-	attach(this: State): void {
-	},
-	detach(this: State): void {
-	},
-};
-
-
-function createState(proto?: {
-	start?: () => Promise<void>;
-	end?: () => void;
-	attach?: () => void;
-	detach?: () => void;
-})
-	: State
-{
-	return Object.assign({}, defaults, proto);
-}
-
-
 function createManager(): Manager<State, Trigger> {
 	return new Manager<State, Trigger>();
 }
-
-
-describe("Manager start method", (): void => {
-	let manager: Manager<State, Trigger>;
-
-	beforeEach((): void => {
-		manager = createManager();
-	});
-
-	it("starts the state", (done): void => {
-		const state = createState();
-		spyOn(state, 'start').and.callThrough();
-		const id = manager.add(state);
-		manager.start(id).then((): void => {
-			expect(state.start).toHaveBeenCalledTimes(1);
-			done();
-		});
-	});
-	it("sets the current state", (): void => {
-		const state = createState();
-		const id = manager.add(state);
-		manager.start(id);
-		expect(manager.current).toBe(state);
-	});
-	it("throws if the manager has no such state", (): void => {
-		expect((): void => {
-			manager.start('not a state');
-		}).toThrow();
-	});
-	it("throws if the manager has already been started", (): void => {
-		const state = createState();
-		const id = manager.add(state);
-		manager.start(id);
-		expect((): void => {
-			manager.start(id);
-		}).toThrow();
-	});
-});
 
 
 interface TestInitialiser {
@@ -175,7 +111,7 @@ describe("Manager add method", (): void => {
 	});
 
 	it("sets an alias if provided", (): void => {
-		const state = createState();
+		const state = createState('test');
 		const alias = 'test-alias';
 		manager.add(state, {alias});
 		expect(manager.at(alias)).toBe(state);
@@ -187,7 +123,7 @@ describe("Manager add method", (): void => {
 		let id: number;
 
 		beforeEach((): void => {
-			state = createState();
+			state = createState('test');
 			id = manager.add(state);
 		});
 
@@ -221,8 +157,8 @@ describe("Manager add method", (): void => {
 
 	describe("can add children", (): void => {
 		testChild(() => {
-			const parent = createState();
-			const child = createState();
+			const parent = createState('parent');
+			const child = createState('child');
 			const childKey = manager.add(child);
 			const parentKey = manager.add(parent, {
 				children: [childKey],
@@ -248,8 +184,8 @@ describe("Manager appendChild method", (): void => {
 
 	describe("can add new child states", (): void => {
 		testChild(() => {
-			const child = createState();
-			const parent = createState();
+			const child = createState('child');
+			const parent = createState('parent');
 			const parentKey = manager.add(parent);
 			const childKey = manager.appendChild(parentKey, child);
 			return {
@@ -264,8 +200,8 @@ describe("Manager appendChild method", (): void => {
 
 	describe("can append existing states", (): void => {
 		testChild(() => {
-			const child = createState();
-			const parent = createState();
+			const child = createState('child');
+			const parent = createState('parent');
 			const parentKey = manager.add(parent);
 			const childKey = manager.add(child);
 			manager.appendChild(parentKey, childKey);
@@ -287,8 +223,8 @@ describe("Manager count method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
-		manager.add(createState());
-		state = createState();
+		manager.add(createState('one'));
+		state = createState('two');
 	});
 
 	it("returns the number of times a state is included", (): void => {
@@ -309,8 +245,8 @@ describe("Manager isUnique method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
-		manager.add(createState());
-		state = createState();
+		manager.add(createState('one'));
+		state = createState('two');
 	});
 
 	it("returns false if the manager has no such state", (): void => {

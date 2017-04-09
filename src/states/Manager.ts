@@ -1,16 +1,6 @@
-import {noop} from '../util/misc';
+import {noop} from 'jam/util/misc';
 
 import {Relation} from './Relation';
-import {ExitType} from './ExitType';
-
-
-export interface ManagedState {
-	start(): Promise<void>;
-	end(): void;
-
-	attach(): void;
-	detach(): void;
-}
 
 
 export type Alias = number | string | symbol;
@@ -18,9 +8,9 @@ export type Alias = number | string | symbol;
 
 export interface TransitionBase<State, Trigger> {
 	/** The trigger for this transition or `null` if caused by a jump. */
-	readonly trigger: Trigger;
+	readonly trigger: Trigger | null;
 	/** How to deal with the outgoing state. */
-	readonly exit: ExitType | ((state: State, trigger: Trigger) => void);
+	readonly exit: (state: State, trigger: Trigger | null) => void;
 }
 
 
@@ -60,29 +50,11 @@ export interface TriggerEvent<State, Trigger> {
 }
 
 
-export function endState(state: ManagedState): void {
-	state.end();
-}
-
-
-export function detachState(state: ManagedState): void {
-	state.detach();
-}
-
-
-interface InternalTransition<State, Trigger> {
-	readonly trigger: Trigger;
-	readonly exit: (state: State, trigger: Trigger) => void;
-	readonly id?: Alias;
-	readonly rel?: Relation;
-}
-
-
 interface Node<State, Trigger> {
 	readonly id: number;
 	readonly state: State;
 	children: Alias[];
-	transitions: InternalTransition<State, Trigger>[];
+	transitions: Transition<State, Trigger>[];
 	parent?: Alias;
 }
 
@@ -90,20 +62,19 @@ interface Node<State, Trigger> {
 let idCounter: number = -1;
 
 
-export class Manager<State extends ManagedState, Trigger> {
-	preTrigger: (ev: TriggerEvent<State, Trigger>) => void;
-	postTrigger: (ev: TriggerEvent<State, Trigger>) => void;
+export class Manager<State, Trigger> {
+	preTrigger: (ev: TriggerEvent<State, Trigger>) => void = noop;
+	postTrigger: (ev: TriggerEvent<State, Trigger>) => void = noop;
 
 	private nodes = new Map<Alias, Node<State, Trigger>>();
 	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger>;
 
-	start(key: Alias): Promise<void> {
+	set(key: Alias): void {
 		if (this.curr) {
 			throw new Error("Already initialised");
 		}
 		this.curr = this.getNode(key);
-		return this.curr.state.start();
 	}
 
 	get current(): State {
@@ -218,9 +189,7 @@ export class Manager<State extends ManagedState, Trigger> {
 
 	addTransitions(key: Alias, list: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
-		node.transitions = node.transitions.concat(list.map(
-			tr => this.createTransition(tr)
-		));
+		node.transitions = node.transitions.concat(list);
 	}
 
 	appendChild(parentKey: Alias, child: Alias | State): number {
@@ -242,63 +211,62 @@ export class Manager<State extends ManagedState, Trigger> {
 	}
 
 	on(key: Alias, transition: Transition<State, Trigger>): void {
-		this.getNode(key).transitions.push(this.createTransition(transition));
+		this.getNode(key).transitions.push(transition);
 	}
 
 	onMany(key: Alias, transitions: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
-		node.transitions = node.transitions.concat(transitions.map(
-			t => this.createTransition(t)
-		));
+		node.transitions = node.transitions.concat(transitions);
 	}
 
-	jump(key: Alias): Promise<void> {
-		return this.doJump(key, null, endState);
+	/**
+	 * Jump to another state.
+	 *
+	 * @param key an alias or ID for the new state.
+	 * @param exit an exit strategy for leaving the current state.
+	 */
+	jump(key: Alias, exit: (state: State, trigger: null) => void): void {
+		this._jump(key, null, exit);
 	}
 
-	trigger(trigger: Trigger): Promise<void> {
-		try {
-			const transition = this.curr.transitions.find(
-				tr => tr.trigger === trigger
-			);
-			if (!transition) {
-				return this.onEmptyTransition();
-			}
-			let nextID = (<IDTransition<State, Trigger>> transition).id;
-			if (typeof nextID !== 'number') {
-				switch (
-					(<RelationTransition<State, Trigger>> transition).rel
-				) {
-					case Relation.sibling: {
-						const sibs = this.getNode(this.curr.parent!).children;
-						nextID = sibs[sibs.length - 1];
-						break;
-					}
-					case Relation.parent:
-						nextID = this.curr.parent!;
-						break;
-					case Relation.child:
-						nextID = this.curr.children[0];
-						break;
+	trigger(trigger: Trigger): void {
+		const transition = this.curr.transitions.find(
+			tr => tr.trigger === trigger
+		);
+		if (!transition) {
+			return this.onEmptyTransition(trigger);
+		}
+		let nextID = (<IDTransition<State, Trigger>> transition).id;
+		if (typeof nextID !== 'number') {
+			switch (
+				(<RelationTransition<State, Trigger>> transition).rel
+			) {
+				case Relation.sibling: {
+					const sibs = this.getNode(this.curr.parent!).children;
+					nextID = sibs[sibs.length - 1];
+					break;
 				}
+				case Relation.parent:
+					nextID = this.curr.parent!;
+					break;
+				case Relation.child:
+					nextID = this.curr.children[0];
+					break;
 			}
-			return this.doJump(nextID, trigger, transition.exit);
 		}
-		catch (err) {
-			return Promise.reject(err);
-		}
+		this._jump(nextID, trigger, transition.exit);
 	}
 
-	protected onEmptyTransition(): Promise<void> {
-		return Promise.resolve();
+	protected onEmptyTransition(trigger: Trigger): void {
+		throw new Error("No transition for trigger: " + trigger);
 	}
 
-	private doJump(
+	private _jump(
 		nextID: Alias,
 		trigger: Trigger | null,
 		exit: (state: State, trigger: Trigger | null) => void
 	)
-		: Promise<void>
+		: void
 	{
 		const next = this.getNode(nextID);
 		const ev = {
@@ -309,9 +277,7 @@ export class Manager<State extends ManagedState, Trigger> {
 		this.preTrigger(ev);
 		exit(ev.old, trigger);
 		this.curr = next;
-		return next.state.start().then((): void => {
-			this.postTrigger(ev);
-		});
+		this.postTrigger(ev);
 	}
 
 	private getOrCreateNode(arg: Alias | State): Node<State, Trigger> {
@@ -348,35 +314,5 @@ export class Manager<State extends ManagedState, Trigger> {
 			throw new Error(`State ${key} has no parent`);
 		}
 		return this.getNode(node.parent);
-	}
-
-	private createTransition(transition: Transition<State, Trigger>)
-		: InternalTransition<State, Trigger>
-	{
-		let exit: (state: State, trigger: Trigger) => void;
-		switch (transition.exit) {
-			case undefined:
-				exit = (
-					Relation.child ===
-						(<InternalTransition<State, Trigger>> transition).rel
-					? detachState
-					: endState
-				);
-				break;
-			case ExitType.none:
-				exit = noop;
-				break;
-			case ExitType.detach:
-				exit = detachState;
-				break;
-			case ExitType.end:
-				exit = endState;
-				break;
-			default:
-				// Assume it's a function, in which case we keep it.
-				exit = transition.exit;
-				break;
-		}
-		return Object.assign({}, transition, {exit});
 	}
 }

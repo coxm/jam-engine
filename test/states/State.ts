@@ -1,4 +1,4 @@
-import {State} from 'jam/states/State';
+import {State, StateEventType} from 'jam/states/State';
 
 
 function neverResolve(): Promise<any> {
@@ -6,169 +6,219 @@ function neverResolve(): Promise<any> {
 }
 
 
-describe("state callback", (): void => {
-	describe("onAnyPreloadBegin", (): void => {
-		it("gets called when a state starts preloading", (done): void => {
-			const state = new State({
-				name: "gets called when a state starts preloading",
-			});
+describe("state event", (): void => {
+	let onEvent: jasmine.Spy;
+	beforeEach((): void => {
+		onEvent = spyOn(State, 'onEvent');
+	});
+
+	describe("preloadBegin", (): void => {
+		const testName: string = "is fired when a state starts preloading";
+		it(testName, (done): void => {
+			const state = new State(testName);
 			spyOn(state, 'doPreload').and.returnValue(neverResolve());
-			const spy = spyOn(State, 'onAnyPreloadBegin');
 			state.preload();
-			expect(spy).toHaveBeenCalledTimes(1);
-			expect(spy).toHaveBeenCalledWith(state);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.preloadBegin,
+				{state}
+			]);
 			done();
+		});
+
+		const testName2: string = "isn't fired if preloading already happened";
+		it(testName2, (done): void => {
+			const state = new State(testName2);
+			state.preload().then((): void => {
+				onEvent.calls.reset();
+				state.preload();
+				expect(onEvent).toHaveBeenCalledTimes(0);
+				done();
+			});
 		});
 	});
 
-	describe("onAnyPreloadEnd", (): void => {
-		it("doesn't get called prematurely", (done): void => {
-			const state = new State({
-				name: "doesn't get called prematurely",
-			});
+	describe("preloadEnd", (): void => {
+		const testNameA: string = "isn't fired prematurely";
+		it(testNameA, (done): void => {
+			const state = new State(testNameA);
 			spyOn(state, 'doPreload').and.returnValue(neverResolve());
-			const spy = spyOn(State, 'onAnyPreloadEnd');
 			state.preload();
 			setTimeout((): void => {
-				expect(spy).not.toHaveBeenCalled();
+				// The preloadBegin event will still be fired, though.
+				expect(onEvent).toHaveBeenCalledTimes(1);
+				expect(onEvent.calls.mostRecent().args[0]).not.toBe(
+					StateEventType.preloadEnd
+				);
 				done();
 			}, 20);
 		});
-		it("gets called when a state is done preloading", (done): void => {
+
+		const testNameB: string = "is fired when a state is done preloading";
+		it(testNameB, (done): void => {
 			const preloadData = {fake: 'data'};
-			const spy = spyOn(State, 'onAnyPreloadEnd');
-			const state = new State({
-				name: "gets called when a state is done preloading",
-			});
+			const state = new State(testNameB);
 			spyOn(state, 'doPreload').and.returnValue(
 				Promise.resolve(preloadData)
 			);
 			state.preload().then((): void => {
-				expect(spy).toHaveBeenCalledTimes(1);
-				expect(spy).toHaveBeenCalledWith(state, preloadData);
+				expect(onEvent).toHaveBeenCalledTimes(2);
+				expect(onEvent.calls.mostRecent().args).toEqual([
+					StateEventType.preloadEnd,
+					{state, data: preloadData}
+				]);
 				done();
 			});
 		});
 	});
 
-	describe("onAnyStart", (): void => {
+	describe("init", (): void => {
 		let state: State;
-		let spy: jasmine.Spy;
 
 		beforeEach((): void => {
-			state = new State({name: 'TestState'});
-			spy = spyOn(State, 'onAnyStart');
+			state = new State("init test");
 		});
 
-		it("doesn't get called until the state is preloaded", (done): void => {
+		it("isn't fired until the state is preloaded", (done): void => {
 			spyOn(state, 'doPreload').and.returnValue(neverResolve());
-			state.start();
+			state.init();
 			setTimeout((): void => {
-				expect(spy).not.toHaveBeenCalled();
+				expect(onEvent).toHaveBeenCalledTimes(1);
+				expect(onEvent.calls.mostRecent().args[0]).toBe(
+					StateEventType.preloadBegin
+				);
 				done();
 			});
 		});
-		it("gets called when the state is started", (done) => {
-			const preloadData = {preload: 'data'};
-			spyOn(state, 'doPreload').and.returnValue(preloadData);
+		it("is fired when the state is initialised", (done) => {
+			const initData = {init: 'data'};
+			spyOn(state, 'doInit').and.returnValue(initData);
 
-			state.start().then((): void => {
-				expect(spy).toHaveBeenCalledTimes(1);
-				expect(spy).toHaveBeenCalledWith(state, preloadData);
+			state.init().then((): void => {
+				expect(onEvent).toHaveBeenCalled();
+				expect(onEvent.calls.mostRecent().args).toEqual([
+					StateEventType.initDone,
+					{state, data: initData}
+				]);
 				done();
 			});
 		});
-		it("gets called on subsequent re-starts", (done): void => {
-			Promise.all([
-				state.start(),
-				state.start(),
-				state.start()
-			]).then((): void => {
-				expect(spy).toHaveBeenCalledTimes(3);
+		it("is fired on subsequent re-inits", (done): void => {
+			state.preload()
+			.then((): Promise<any> => {
+				// Make sure to flush previous calls out.
+				onEvent.calls.reset();
+				return Promise.all([
+					state.init(),
+					state.init(),
+					state.init()
+				]);
+			})
+			.then((): void => {
+				expect(onEvent).toHaveBeenCalledTimes(3);
 				done();
 			});
 		});
 	});
 
-	describe("onAnyPause", (): void => {
+	describe("pausing", (): void => {
 		let state: State = <any> null;
 
 		beforeEach((): void => {
-			state = new State({name: 'onAnyPause test'});
+			state = new State('pause test');
 		});
 
-		it("gets called on state pause", (): void => {
-			const spy = spyOn(State, 'onAnyPause');
+		it("is fired on state pause", (): void => {
 			state.pause();
-			expect(spy).toHaveBeenCalledTimes(1);
-			expect(spy).toHaveBeenCalledWith(state);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.pausing,
+				{state}
+			]);
 		})
-		it("doesn't get called on double-pause", (): void => {
+		it("isn't fired on double-pause", (): void => {
 			state.pause();
-			const spy = spyOn(State, 'onAnyPause');
+			onEvent.calls.reset();
 			state.pause();
-			expect(spy).not.toHaveBeenCalled();
+			expect(onEvent).not.toHaveBeenCalled();
 		})
-		it("gets called on every pause", (): void => {
-			const spy = spyOn(State, 'onAnyPause');
+		it("is fired on every pause", (): void => {
 			state.pause();
-			expect(spy).toHaveBeenCalledTimes(1);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.pausing,
+				{state}
+			]);
 
 			state.unpause();
+			onEvent.calls.reset();
+
 			state.pause();
-			expect(spy).toHaveBeenCalledTimes(2);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.pausing,
+				{state}
+			]);
 		})
 	})
 
-	describe("onAnyUnpause", (): void => {
+	describe("unpausing", (): void => {
 		let state: State = <any> null;
 
 		beforeEach((): void => {
-			state = new State({name: 'onAnyUnpause test'});
+			state = new State('unpausing test');
 		});
 
-		it("gets called on state unpause", (): void => {
-			const spy = spyOn(State, 'onAnyUnpause');
+		it("is fired on state unpause", (): void => {
 			state.pause();
-			expect(spy).not.toHaveBeenCalled();
+			onEvent.calls.reset();
 
 			state.unpause();
-			expect(spy).toHaveBeenCalledTimes(1);
-			expect(spy).toHaveBeenCalledWith(state);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.unpausing,
+				{state}
+			]);
 		});
-		it("doesn't get called on double-unpause", (): void => {
-			const spy = spyOn(State, 'onAnyUnpause');
+		it("isn't fired on double-unpause", (): void => {
 			state.unpause();
-			expect(spy).not.toHaveBeenCalled();
+			expect(onEvent).not.toHaveBeenCalled();
 
 			state.pause();
+
+			onEvent.calls.reset();
+
 			state.unpause();
 			state.unpause();
-			expect(spy).toHaveBeenCalledTimes(1);
+			expect(onEvent).toHaveBeenCalledTimes(1);
+			expect(onEvent.calls.mostRecent().args).toEqual([
+				StateEventType.unpausing,
+				{state}
+			]);
 		});
 	})
 
-	describe("onAnyEnd", (): void => {
-		let state: State = <any> null;
-		let spy: jasmine.Spy = <any> null;
+	describe("stopping", (): void => {
+		let state: State;
 
 		beforeEach((): void => {
-			state = new State({name: 'onAnyEnd test'});
-			spy = spyOn(State, 'onAnyEnd');
+			state = new State('destroy test');
 		});
 
-		it("doesn't get called if the state wasn't running", (done): void => {
-			state.end();
+		it("isn't fired if the state wasn't running", (done): void => {
+			state.stop();
 			setTimeout((): void => {
-				expect(spy).not.toHaveBeenCalled();
+				expect(onEvent).not.toHaveBeenCalled();
 				done();
 			});
 		});
-		it("gets called on state end", (done): void => {
+		it("is fired on state stop", (done): void => {
 			state.start().then((): void => {
-				state.end();
-				expect(spy).toHaveBeenCalledTimes(1);
-				expect(spy).toHaveBeenCalledWith(state);
+				state.stop();
+				expect(onEvent.calls.mostRecent().args).toEqual([
+					StateEventType.stopping,
+					{state}
+				]);
 				done();
 			});
 		});
@@ -180,7 +230,7 @@ describe("State#preload", (): void => {
 	let state: State;
 
 	beforeEach((): void => {
-		state = new State({name: 'State#preload test'});
+		state = new State('State#preload test');
 	});
 
 	it("loads the data if unloaded", (done): void => {
@@ -205,59 +255,32 @@ describe("State#preload", (): void => {
 });
 
 
-describe("State#start", (): void => {
+describe("State#init", (): void => {
 	let state: State;
+	let doInit: jasmine.Spy;
 
 	beforeEach((): void => {
-		state = new State({name: 'State#start test'});
+		state = new State('State#init test');
+		doInit = spyOn(state, 'doInit');
 	});
 
-	it("doesn't call onStart before preload completes", (done): void => {
+	it("doesn't call doInit before preload completes", (done): void => {
 		spyOn(state, 'doPreload').and.returnValue(neverResolve());
-		const onStart = spyOn(state, 'onStart');
-		state.start();
+		state.init();
 		setTimeout((): void => {
-			expect(onStart).not.toHaveBeenCalled();
+			expect(doInit).not.toHaveBeenCalled();
 			done();
 		}, 100);
 	});
-	it("starts once the preload is complete", (done): void => {
-		const onStart = spyOn(state, 'onStart');
-		state.start().then((): void => {
-			expect(onStart).toHaveBeenCalled();
+	it("init once the preload is complete", (done): void => {
+		state.init().then((): void => {
+			expect(doInit).toHaveBeenCalled();
 			done();
 		});
 	});
-	it("sets the isRunning flag", (done): void => {
-		state.start().then((): void => {
-			expect(state.isRunning).toBe(true);
-			done();
-		});
-	});
-});
-
-
-describe("State#end", (): void => {
-	it("doesn't call onEnd if not already running", (): void => {
-		const state = new State({name: 'State#end test'});
-		const onEnd = spyOn(state, 'onEnd');
-		state.end();
-		expect(onEnd).not.toHaveBeenCalled();
-	});
-	it("calls onEnd if already running", (done): void => {
-		const state = new State({name: 'State#end test'});
-		const onEnd = spyOn(state, 'onEnd');
-		state.start().then((): void => {
-			state.end();
-			expect(onEnd).toHaveBeenCalled();
-			done();
-		});
-	});
-	it("unsets the isRunning flag", (done): void => {
-		const state = new State({name: 'State#end test'});
-		state.start().then((): void => {
-			state.end();
-			expect(state.isRunning).toBe(false);
+	it("sets the isInitialised flag", (done): void => {
+		state.init().then((): void => {
+			expect(state.isInitialised).toBe(true);
 			done();
 		});
 	});
