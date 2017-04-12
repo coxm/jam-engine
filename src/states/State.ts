@@ -48,6 +48,7 @@ export class State {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
 
 	private preloaded: Promise<any> | null = null;
+	private initialised: Promise<any> | null = null;
 
 	protected flags: number = StateFlags.none;
 
@@ -107,7 +108,9 @@ export class State {
 	 * initialised.
 	 */
 	init(): Promise<void> {
-		return this.preload().then(this._init.bind(this));
+		return this.initialised || (this.initialised = this.preload().then(
+			this._init.bind(this)
+		));
 	}
 
 	/** Undo initialisation. */
@@ -259,14 +262,14 @@ export class State {
 	}
 
 	/** Cause this state to initialise. */
-	private _init(preloadData: any): void {
+	private _init(preloadData: any): Promise<any> {
 		const data = this.doInit(preloadData);
 		State.onEvent(StateEventType.initDone, {
 			state: this,
 			data: data,
 		});
 		this.flags |= StateFlags.initialised;
-		return data;
+		return Promise.resolve(data);
 	}
 
 	/** Cause this state to start. */
