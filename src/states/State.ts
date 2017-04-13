@@ -1,12 +1,6 @@
 import {noop} from '../util/misc';
 
 
-export interface StateOptions {
-	/** The State's name. */
-	name: string;
-}
-
-
 export const enum StateFlags {
 	none = 0,
 	preloaded = 1,
@@ -33,8 +27,8 @@ export const enum StateEventType {
 
 
 export interface StateEvent<T> {
-	state: State;
-	data?: T;
+	readonly state: State;
+	readonly data?: T;
 }
 
 
@@ -107,18 +101,32 @@ export class State {
 	 * @returns a promise which resolves when the state has preloaded and
 	 * initialised.
 	 */
-	init(): Promise<void> {
+	init(): Promise<any> {
 		return this.initialised || (this.initialised = this.preload().then(
 			this._init.bind(this)
 		));
 	}
 
+	/**
+	 * Re-initialise this state.
+	 *
+	 * Equivalent to de-initialising then initialising again.
+	 */
+	reinit(): Promise<any> {
+		this.deinit();
+		return this.init();
+	}
+
 	/** Undo initialisation. */
 	deinit(): void {
+		if (!this.isInitialised) {
+			return;
+		}
 		this.stop();
 		State.onEvent(StateEventType.deiniting, {state: this});
 		this.doDeinit();
 		this.flags &= ~StateFlags.initialised;
+		this.initialised = null;
 	}
 
 	/** Unload and de-initialise this state. */
@@ -178,6 +186,9 @@ export class State {
 	}
 
 	attach(): void {
+		if (!(this.flags & StateFlags.initialised)) {
+			throw new Error("State uninitialised");
+		}
 		if (!(this.flags & StateFlags.attached)) {
 			State.onEvent(StateEventType.attaching, {state: this});
 			this.doAttach();

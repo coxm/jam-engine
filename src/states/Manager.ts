@@ -70,6 +70,14 @@ export class Manager<State, Trigger> {
 	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger>;
 
+	constructor(options?: {
+		preTrigger: (ev: TriggerEvent<State, Trigger>) => void;
+		postTrigger: (ev: TriggerEvent<State, Trigger>) => void;
+	}) {
+		this.preTrigger = (options && options.preTrigger) || noop;
+		this.postTrigger = (options && options.postTrigger) || noop;
+	}
+
 	set(key: Alias): void {
 		if (this.curr) {
 			throw new Error("Already initialised");
