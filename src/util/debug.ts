@@ -4,3 +4,13 @@ export function expose(values: any): void {
 		(<any> window)[key] = values[key];
 	}
 }
+
+
+const logged: {[name: string]: boolean;} = {};
+export function logOnce(name: string, ...args: any[]): void {
+	if (logged[name]) {
+		return;
+	}
+	logged[name] = true;
+	console.log.apply(console, arguments);
+}
