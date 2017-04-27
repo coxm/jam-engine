@@ -89,6 +89,10 @@ export class Manager<State, Trigger> {
 		return this.curr.state;
 	}
 
+	get currentID(): number {
+		return this.curr.id;
+	}
+
 	id(key: Alias): number {
 		return this.getNode(key).id;
 	}
@@ -146,24 +150,24 @@ export class Manager<State, Trigger> {
 		}
 	}
 
-	*children(key: Alias): IterableIterator<[Alias, State]> {
-		const parent = this.getNode(key);
+	*children(key?: Alias): IterableIterator<[Alias, State]> {
+		const parent = key === undefined ? this.curr : this.getNode(key);
 		for (let id of parent.children) {
 			yield [id, this.getNode(id).state];
 		}
 	}
 
-	*siblings(key: Alias): IterableIterator<[Alias, State]> {
-		const parent = this.getParent(key);
+	*siblings(key?: Alias): IterableIterator<[Alias, State]> {
+		const parent = key === undefined ? this.curr : this.getParent(key);
 		for (let id of parent.children) {
 			yield [id, this.getNode(id).state];
 		}
 	}
 
-	*ancestors(key: Alias, strict: boolean = false)
+	*ancestors(key?: Alias, strict: boolean = false)
 		: IterableIterator<[Alias, State]>
 	{
-		let node: Node<State, Trigger> = this.getNode(key);
+		let node = key === undefined ? this.curr : this.getNode(key);
 		if (!strict) {
 			yield [node.id, node.state];
 		}
@@ -173,8 +177,8 @@ export class Manager<State, Trigger> {
 		}
 	}
 
-	tryParent(key: Alias): [number, State] | null {
-		const node = this.getNode(key);
+	tryParent(key?: Alias): [number, State] | null {
+		const node = key === undefined ? this.curr : this.getNode(key);
 		const parent = this.getNode(node.parent!)!;
 		return node ? [parent.id, parent.state] : null;
 	}
