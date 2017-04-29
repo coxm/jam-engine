@@ -103,7 +103,7 @@ describe("state event", (): void => {
 				done();
 			});
 		});
-		it("is fired on subsequent re-inits", (done): void => {
+		it("is not fired on subsequent re-inits", (done): void => {
 			state.preload()
 			.then((): Promise<any> => {
 				// Make sure to flush previous calls out.
@@ -115,7 +115,7 @@ describe("state event", (): void => {
 				]);
 			})
 			.then((): void => {
-				expect(onEvent).toHaveBeenCalledTimes(3);
+				expect(onEvent).toHaveBeenCalledTimes(1);
 				done();
 			});
 		});
