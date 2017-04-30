@@ -285,3 +285,88 @@ describe("State#init", (): void => {
 		});
 	});
 });
+
+
+describe("State#start", (): void => {
+	let state: State;
+	let doStart: jasmine.Spy;
+
+	beforeEach((): void => {
+		state = new State('State#start test');
+		doStart = spyOn(state, 'doStart');
+	});
+
+	it(
+		"doesn't call doStart before initialisation is complete",
+		(done): void => {
+			spyOn(state, 'init').and.returnValue(neverResolve());
+			state.start();
+			setTimeout((): void => {
+				expect(doStart).not.toHaveBeenCalled();
+				done();
+			});
+		}
+	);
+	it("starts once the initialisation is complete", (done): void => {
+		state.start().then((): void => {
+			expect(doStart).toHaveBeenCalled();
+			done();
+		});
+	});
+	it("sets the isRunning flag", (done): void => {
+		state.start().then((): void => {
+			expect(state.isRunning).toBe(true);
+			done();
+		});
+	});
+	it(
+		"doesn't double-start if called twice before initialised",
+		(done): void => {
+			state.start();
+			state.start().then((): void => {
+				expect(doStart).toHaveBeenCalledTimes(1);
+				done();
+			});
+		}
+	);
+	it("doesn't double-start if called while running", (done) => {
+		state.start()
+		.then((): Promise<void> => state.start())
+		.then((): void => {
+			expect(doStart).toHaveBeenCalledTimes(1);
+			done();
+		});
+	});
+});
+
+
+describe("State#restart", () => {
+	let state: State;
+
+	beforeEach((): void => {
+		state = new State('State#restart test');
+	});
+
+	it("starts the state if not running", (done) => {
+		state.restart().then((): void => {
+			expect(state.isRunning).toBe(true);
+			done();
+		});
+	});
+	it("doesn't start the state if running", (done) => {
+		state.start().then((): void => {
+			const doStart = spyOn(state, 'doStart');
+			state.restart().then((): void => {
+				expect(doStart).not.toHaveBeenCalled();
+				done();
+			});
+		});
+	});
+	it("doesn't unpause the state", (done) => {
+		state.pause();
+		state.restart().then((): void => {
+			expect(state.isPaused).toBe(true);
+			done();
+		});
+	});
+});

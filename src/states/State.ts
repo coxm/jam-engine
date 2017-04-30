@@ -8,6 +8,7 @@ export const enum StateFlags {
 	running = 4,
 	attached = 8,
 	paused = 16,
+	started = 32,
 }
 
 
@@ -37,12 +38,30 @@ export interface StateEvent<T> {
  *
  * States can be executed linearly or as tree nodes (or both). Basic behaviour
  * is injected by subclassing and overriding certain methods.
+ *
+ * Each State has a number of flags representing its condition:
+ * - isPreloaded - whether the state has preloaded its data;
+ * - isInitialised - whether the state has initialised;
+ * - willRun - whether the state's `start()` method has been called and not
+ *   subsequently stopped.
+ * - isRunning - whether the state has started;
+ * - isPaused - whether the state is paused;
+ * - isAttached - whether the state is 'attached', e.g. is hooked up to event
+ *   systems, rendering pipelines or other game systems.
+ *
+ * Each of these flags corresponds to a property of the same name.
+ *
+ * A state will preload before initialising, and initialise before starting.
+ * Other flags are independent of one another. For example a state can start
+ * while paused (perhaps useful if action will begin immediately), and can be
+ * detached while running (e.g. to run in the background).
  */
 export class State {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
 
 	private preloaded: Promise<any> | null = null;
 	private initialised: Promise<any> | null = null;
+	private started: Promise<void> | null = null;
 
 	protected flags: number = StateFlags.none;
 
@@ -59,6 +78,10 @@ export class State {
 
 	get isAttached(): boolean {
 		return 0 !== (this.flags & StateFlags.attached);
+	}
+
+	get willRun(): boolean {
+		return 0 !== (this.flags & StateFlags.started);
 	}
 
 	get isRunning(): boolean {
@@ -139,10 +162,27 @@ export class State {
 	/**
 	 * Start this state.
 	 *
-	 * Initialises via {@link init} before starting.
+	 * Does not restart the state if already running, or a previous `start()`
+	 * call is pending. Does not un-pause the state.
 	 */
 	start(): Promise<void> {
-		return this.init().then(this._start.bind(this));
+		if (this.started) {
+			return this.started;
+		}
+		this.flags |= StateFlags.started;
+		return this.restart();
+	}
+
+	/**
+	 * Start this state.
+	 *
+	 * Starts the state, even if it is already running or a previous `start()`
+	 * call is pending. Does not un-pause the state.
+	 *
+	 * Initialises via {@link init} before starting.
+	 */
+	restart(): Promise<void> {
+		return this.started = this.init().then(this._start.bind(this));
 	}
 
 	/** Stop this state. */
@@ -151,7 +191,20 @@ export class State {
 			State.onEvent(StateEventType.stopping, {state: this});
 			this.doStop();
 			this.flags &= ~StateFlags.running;
+			this.started = null;
 		}
+	}
+
+	/**
+	 * Ensure this state is started and unpaused.
+	 *
+	 * Does not restart or pause the state if already running and/or unpaused.
+	 *
+	 * @returns a promise which resolves when the state has started and been
+	 * un-paused.
+	 */
+	resume(): Promise<void> {
+		return this.start().then((): void => { this.unpause(); });
 	}
 
 	/** Pause this state. */
@@ -285,6 +338,9 @@ export class State {
 
 	/** Cause this state to start. */
 	private _start(initData: any): void {
+		if (this.isRunning) {
+			return;
+		}
 		State.onEvent(StateEventType.starting, {
 			state: this,
 			data: initData,
