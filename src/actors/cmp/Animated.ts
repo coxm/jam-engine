@@ -40,18 +40,22 @@ export class Animated extends ComponentBase {
 	}
 
 	select(id: number|string): void {
-		if (!this.anims[id]) {
+		const newAnim = this.anims[id];
+		if (newAnim === this.current) {
+			return;
+		}
+		else if (!newAnim) {
 			throw new Error(`No '${id}' anim`);
 		}
 		const old = this.current;
 		if (old.parent) {
-			old.parent.addChild(this.anims[id]);
+			old.parent.addChild(newAnim);
 			old.parent.removeChild(old);
 		}
-		this.current = this.anims[id];
+		this.current = newAnim;
 		if (old.playing) {
 			old.stop();
-			this.current.play();
+			newAnim.play();
 		}
 	}
 
