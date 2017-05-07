@@ -73,7 +73,7 @@ export function getDefaultCache(this: FileLoader): Map<string, any> {
  * @example
  * class CachedLoader extends FileLoader {
  *     readonly cache: Map<string, any>;
- *     @cache
+ *     @cacheUnderTypeAndFullPath
  *     text(relpath: string): string {
  *         return super.text(relpath);
  *     }
@@ -107,7 +107,7 @@ export const cacheUnderTypeAndFullPath = cache(
  * @example
  * class CachedLoader extends FileLoader {
  *     readonly cache: Map<string, any>;
- *     @cache
+ *     @cacheUnderFullPath
  *     text(relpath: string): string {
  *         return super.text(relpath);
  *     }
