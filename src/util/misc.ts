@@ -7,6 +7,12 @@ export function noop(): void {
 }
 
 
+export const foreverTrue = () => true;
+
+
+export const foreverFalse = () => false;
+
+
 export function identity<T>(t: T): T {
 	return t;
 }
