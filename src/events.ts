@@ -209,6 +209,7 @@ export class Manager<Category, Data> {
 			for (let info of batched) {
 				this.off(info.cat, info.fn, info.ctx);
 			}
+			this.batches.delete(id);
 		}
 		return this;
 	}
