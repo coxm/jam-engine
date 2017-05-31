@@ -4,11 +4,11 @@ import {noop} from './util/misc';
 
 export interface Event<Category, Data> {
 	/** The category of this event. */
-	category: Category;
+	readonly category: Category;
 	/** Event data. */
-	data: Data;
+	readonly data: Data;
 	/** Event metadata. Useful for debugging. */
-	meta: any;
+	readonly meta: any;
 }
 
 
@@ -18,7 +18,27 @@ export interface Handler<Category, Data> {
 }
 
 
-type CategoryHandlers = Map<string, HandlerInfo>;
+export interface HandlerOptions {
+	readonly limit?: number;
+	readonly context?: any;
+}
+
+
+export type BatchDefaults = HandlerOptions & (
+	{readonly name?: string} |
+	{readonly id: symbol}
+);
+
+
+export type HandlerItem<Category, Data> = (
+	[Category, Handler<Category, Data>] |
+	[Category, Handler<Category, Data>, HandlerOptions]
+);
+
+
+export interface ManagerOptions<Category, Data> {
+	metadata: (category: Category, data: Data) => any;
+}
 
 
 interface HandlerInfo {
@@ -39,30 +59,7 @@ interface BatchedHandlerInfo extends HandlerInfo {
 }
 
 
-export interface ManagerOptions<Category, Data> {
-	metadata: (category: Category, data: Data) => any;
-}
-
-
-export interface BatchOptionsBase {
-	name?: string;
-	limit?: number;
-}
-
-
-export interface HasSingleContext {
-	context: any;
-}
-
-
-export interface HasMultipleContexts {
-	contexts: any;
-}
-
-
-export type BatchOptions = BatchOptionsBase & (
-	HasSingleContext | HasMultipleContexts
-);
+type CategoryHandlers = Map<string, HandlerInfo>;
 
 
 export class Manager<Category, Data> {
@@ -154,48 +151,36 @@ export class Manager<Category, Data> {
 	 * @returns a unique ID for the batch, which can be used to remove all
 	 * handlers involved.
 	 */
-	batch(
-		items: [Category, Handler<Category, Data>][],
-		options?: BatchOptions
-	)
+	batch(items: HandlerItem<Category, Data>[], defaults?: BatchDefaults)
 		: symbol
 	{
-		let getContext: (i: number) => any;
-		if (options === undefined) {
-			options = <BatchOptions> {};
-			getContext = (i: number): any => null;
-		}
-		else if (options.hasOwnProperty('context')) {
-			console.assert(
-				(<HasMultipleContexts> options).contexts === undefined,
-				"Batch request has 'context' and 'contexts' properties"
-			);
-			getContext = (i: number): any =>
-				(<HasSingleContext> options).context;
-		}
-		else if (options.hasOwnProperty('contexts')) {
-			getContext = (i: number): any =>
-				(<HasMultipleContexts> options).contexts[i];
-		}
+		defaults = Object.assign({
+			limit: Infinity,
+			context: null,
+			name: '',
+		}, defaults);
+		const batchID: symbol = (<{id: symbol}> defaults).id ||
+			Symbol((<{name?: string}> defaults).name);
 
-		const batchID: symbol = Symbol(options!.name);
-		const batched: HandlerInfo[] = items.map((
-			a: [Category, Handler<Category, Data>],
-			i: number
-		)
-			: HandlerInfo =>
-		{
+		let batched: HandlerInfo[] | undefined = this.batches.get(batchID);
+		if (!batched) {
+			batched = [];
+			this.batches.set(batchID, batched);
+		}
+		for (let item of items) {
+			const options = (
+				<[Category, Handler<Category, Data>, HandlerOptions]> item
+			)[2];
 			const info = <BatchedHandlerInfo> this.addHandler(
-				a[0],
-				a[1],
-				getContext(i),
-				options!.limit
+				item[0], // Category.
+				item[1], // Handler.
+				(options && options.context) || defaults!.context,
+				(options && options.limit) || defaults!.limit
 			);
 			info.bat = batchID;
-			return info;
-		});
-		this.batches.set(batchID, batched);
-		return batchID
+			batched.push(info);
+		}
+		return batchID;
 	}
 
 	/**
@@ -214,9 +199,19 @@ export class Manager<Category, Data> {
 		return this;
 	}
 
+	/**
+	 * Check if a batch is registered.
+	 *
+	 * @param id - the ID returned when the batch was created.
+	 */
+	hasBatch(id: symbol): boolean {
+		return this.batches.has(id);
+	}
+
 	/** Cancel all event handlers. */
 	clear(): this {
 		this.handlers.clear();
+		this.batches.clear();
 		return this;
 	}
 
