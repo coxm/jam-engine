@@ -1,4 +1,4 @@
-import {Manager, Event} from 'jam/events';
+import {Manager, Event} from 'jam/events/Manager';
 
 
 type TestEvent = Event<string, number>;

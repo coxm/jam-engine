@@ -1,4 +1,4 @@
-import {Event, Manager as EventManager, Handler} from 'jam/events';
+import {Event, Manager as EventManager, Handler} from 'jam/events/Manager';
 
 import {KeyCode} from './KeyCode';
 

@@ -1,4 +1,4 @@
-import {Manager, Handler} from '../events';
+import {Manager, Handler} from 'jam/events/Manager';
 
 
 export type MouseEventName = (

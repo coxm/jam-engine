@@ -1,5 +1,5 @@
-import {combine as hashCombine} from './util/hash';
-import {noop} from './util/misc';
+import {combine as hashCombine} from 'jam/util/hash';
+import {noop} from 'jam/util/misc';
 
 
 export interface Event<Category, Data> {
