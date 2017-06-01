@@ -10,7 +10,27 @@ interface Context {
 
 
 describe("Event manager", (): void => {
-	const manager: Manager<string, number> = new Manager<string, number>();
+	let manager: Manager<string, number>;
+
+	describe("metadata option", (): void => {
+		it("sets the metadata on events", (): void => {
+			manager = new Manager<string, number>({
+				metadata(cat: string, data: number): any {
+					return `${cat}-${data}`;
+				}
+			});
+			let received: string = '';
+			manager.on('category', (ev: TestEvent): void => {
+				received = ev.meta;
+			});
+			manager.fire('category', 4);
+			expect(received).toBe('category-4');
+		});
+	});
+
+	beforeEach((): void => {
+		manager = new Manager<string, number>();
+	});
 
 	describe("on method", (): void => {
 		it("sets handlers for that category", (): void => {

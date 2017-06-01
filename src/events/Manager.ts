@@ -30,9 +30,16 @@ export type BatchDefaults = HandlerOptions & (
 );
 
 
+export type OptionsHandlerItem<Category, Data> = [
+	Category,
+	Handler<Category, Data>,
+	HandlerOptions
+];
+
+
 export type HandlerItem<Category, Data> = (
 	[Category, Handler<Category, Data>] |
-	[Category, Handler<Category, Data>, HandlerOptions]
+	OptionsHandlerItem<Category, Data>
 );
 
 
