@@ -24,10 +24,9 @@ export interface HandlerOptions {
 }
 
 
-export type BatchDefaults = HandlerOptions & (
-	{readonly name?: string} |
-	{readonly id: symbol}
-);
+export interface BatchDefaults extends HandlerOptions {
+	readonly id?: symbol;
+}
 
 
 export type OptionsHandlerItem<Category, Data> = [
@@ -164,10 +163,8 @@ export class Manager<Category, Data> {
 		defaults = Object.assign({
 			limit: Infinity,
 			context: null,
-			name: '',
 		}, defaults);
-		const batchID: symbol = (<{id: symbol}> defaults).id ||
-			Symbol((<{name?: string}> defaults).name);
+		const batchID: symbol = defaults!.id || Symbol();
 
 		let batched: HandlerInfo[] | undefined = this.batches.get(batchID);
 		if (!batched) {
