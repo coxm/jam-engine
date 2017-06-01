@@ -3,12 +3,14 @@ import {foreverTrue, noop} from 'jam/util/misc';
 import {OptionsHandlerItem, Event} from './Manager';
 
 
-export interface ActionDef {
+/** A definition for a predicate which checks whether to dispatch a trigger. */
+export interface PredicateDef {
 	readonly type: PropertyKey;
 }
 
 
-export interface PredicateDef {
+/** A definition for a triggerable action. */
+export interface ActionDef {
 	readonly type: PropertyKey;
 }
 
@@ -19,6 +21,12 @@ export interface TriggerDefBase<Category> {
 }
 
 
+/**
+ * A definition for if/then/else triggers.
+ *
+ * Defines a trigger which executes the `then` action when the `when` predicate
+ * is satisfied, and the `else` action otherwise.
+ */
 export interface LinearTriggerDef<Category> extends TriggerDefBase<Category> {
 	readonly when?: PredicateDef;
 	readonly then?: ActionDef;
@@ -33,6 +41,13 @@ export type SwitchCaseDef = [
 ];
 
 
+/**
+ * A definition for switch triggers.
+ *
+ * The resulting trigger will search through the list of cases for a value. If
+ * the value is found, the corresponding action is executed. Otherwise, if the
+ * else action is present, that action is used.
+ */
 export interface SwitchTriggerDef<Category> extends TriggerDefBase<Category> {
 	readonly switch: SwitchCaseDef[];
 	readonly else?: ActionDef;
