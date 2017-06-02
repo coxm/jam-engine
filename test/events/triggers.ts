@@ -42,7 +42,7 @@ describe("Trigger Factory", (): void => {
 	describe("action method", (): void => {
 		it("throws if the action hasn't been defined", (): void => {
 			expect((): void => {
-				factory.action({type: 'not defined'});
+				factory.action({do: 'not defined'});
 			}).toThrow();
 		});
 		it("constructs an action accordingly", (): void => {
@@ -56,7 +56,7 @@ describe("Trigger Factory", (): void => {
 				};
 			});
 
-			const action = factory.action({type: actionType});
+			const action = factory.action({do: actionType});
 			action(makeEvent());
 			expect(callCount).toBe(1);
 		});
@@ -65,7 +65,7 @@ describe("Trigger Factory", (): void => {
 	describe("predicate method", (): void => {
 		it("throws if the predicate hasn't been defined", (): void => {
 			expect((): void => {
-				factory.predicate({type: 'not defined'});
+				factory.predicate({pred: 'not defined'});
 			}).toThrow();
 		});
 		it("constructs a predicate accordingly", (): void => {
@@ -75,7 +75,7 @@ describe("Trigger Factory", (): void => {
 				return (): boolean => value;
 			});
 
-			const predicate = factory.predicate({type: predType});
+			const predicate = factory.predicate({pred: predType});
 			expect(predicate(makeEvent())).toBe(value);
 
 			value = true;
@@ -103,8 +103,8 @@ describe("Trigger Factory", (): void => {
 				++elseCount;
 			}
 
-			factory.addActionFactory('then', () => thenAction);
-			factory.addActionFactory('else', () => elseAction);
+			factory.addActionFactory('MyAction', () => thenAction);
+			factory.addActionFactory('MyOtherAction', () => elseAction);
 
 			function predicate(): boolean {
 				++predCount;
@@ -114,10 +114,10 @@ describe("Trigger Factory", (): void => {
 		});
 
 		describe("given a linear trigger, returns a context that", () => {
-			it("always runs if the 'when' field is empty", () => {
+			it("always runs if the 'if' field is empty", () => {
 				const def: LinearTriggerDef = {
 					on: 'category',
-					then: {type: 'then'},
+					then: {do: 'MyAction'},
 				};
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent());
@@ -128,7 +128,7 @@ describe("Trigger Factory", (): void => {
 				predicateReturnValue = true;
 				const def: LinearTriggerDef = {
 					on: 'category',
-					when: {type: 'pred'},
+					if: {pred: 'pred'},
 				};
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent());
@@ -138,7 +138,7 @@ describe("Trigger Factory", (): void => {
 				predicateReturnValue = false;
 				const def: LinearTriggerDef = {
 					on: 'category',
-					when: {type: 'pred'},
+					if: {pred: 'pred'},
 				};
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent());
@@ -148,9 +148,9 @@ describe("Trigger Factory", (): void => {
 				predicateReturnValue = true;
 				const def: LinearTriggerDef = {
 					on: 'category',
-					when: {type: 'pred'},
-					then: {type: 'then'},
-					else: {type: 'else'},
+					if: {pred: 'pred'},
+					then: {do: 'MyAction'},
+					else: {do: 'MyOtherAction'},
 				};
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent());
@@ -162,9 +162,9 @@ describe("Trigger Factory", (): void => {
 				predicateReturnValue = false;
 				const def: LinearTriggerDef = {
 					on: 'category',
-					when: {type: 'pred'},
-					then: {type: 'then'},
-					else: {type: 'else'},
+					if: {pred: 'pred'},
+					then: {do: 'MyAction'},
+					else: {do: 'MyOtherAction'},
 				};
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent());
@@ -175,7 +175,7 @@ describe("Trigger Factory", (): void => {
 		});
 
 		describe("given a switch trigger, returns a context that", () => {
-			const propKey = 'action';
+			const propKey = 'prop';
 			let actionCounts = {
 				a: 0,
 				b: 0,
@@ -194,10 +194,11 @@ describe("Trigger Factory", (): void => {
 
 				def = {
 					on: 'category',
+					key: propKey,
 					switch: [
-						[propKey, 'a', {type: 'ActionA'}],
-						[propKey, 'b', {type: 'ActionB'}],
-						[propKey, 'c', {type: 'ActionC'}]
+						{if: 'a', then: {do: 'ActionA'}},
+						{if: 'b', then: {do: 'ActionB'}},
+						{if: 'c', then: {do: 'ActionC'}},
 					],
 				};
 
@@ -224,7 +225,7 @@ describe("Trigger Factory", (): void => {
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent({
 					data: {
-						action: 'a',
+						[propKey]: 'a'
 					}
 				}));
 				expect(actionCounts).toEqual({
@@ -236,13 +237,13 @@ describe("Trigger Factory", (): void => {
 			});
 			it("calls the default if no such value is found", () => {
 				def = Object.assign({}, def, {
-					else: {type: 'ActionElse'},
+					else: {do: 'ActionElse'},
 				});
 
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent({
 					data: {
-						action: 'd',
+						[propKey]: 'd',
 					},
 				}));
 				expect(actionCounts).toEqual({
@@ -256,7 +257,7 @@ describe("Trigger Factory", (): void => {
 				const context: Context = factory.makeContext(def);
 				context.trigger(makeEvent({
 					data: {
-						action: 'd',
+						[propKey]: 'd',
 					},
 				}));
 				expect(actionCounts).toEqual({
@@ -294,7 +295,7 @@ describe("Trigger Factory", (): void => {
 
 				def = {
 					on: category,
-					then: {type: actionID},
+					then: {do: actionID},
 				};
 			});
 
@@ -340,15 +341,15 @@ describe("Trigger Factory", (): void => {
 				defs = [
 					{
 						on: category1,
-						then: {type: actionAID},
+						then: {do: actionAID},
 					},
 					{
 						on: category1,
-						then: {type: actionBID},
+						then: {do: actionBID},
 					},
 					{
 						on: category2,
-						then: {type: actionCID},
+						then: {do: actionCID},
 					}
 				];
 

@@ -5,13 +5,13 @@ import {OptionsHandlerItem, Event} from './Manager';
 
 /** A definition for a predicate which checks whether to dispatch a trigger. */
 export interface PredicateDef {
-	readonly type: PropertyKey;
+	readonly pred: PropertyKey;
 }
 
 
 /** A definition for a triggerable action. */
 export interface ActionDef {
-	readonly type: PropertyKey;
+	readonly do: PropertyKey;
 }
 
 
@@ -24,21 +24,22 @@ export interface TriggerDefBase<Category> {
 /**
  * A definition for if/then/else triggers.
  *
- * Defines a trigger which executes the `then` action when the `when` predicate
+ * Defines a trigger which executes the `then` action when the `if` predicate
  * is satisfied, and the `else` action otherwise.
  */
 export interface LinearTriggerDef<Category> extends TriggerDefBase<Category> {
-	readonly when?: PredicateDef;
+	readonly if?: PredicateDef;
 	readonly then?: ActionDef;
 	readonly else?: ActionDef;
 }
 
 
-export type SwitchCaseDef = [
-	PropertyKey,  // The key used for accessing a value from the event data.
-	any,  // The value to compare against.
-	ActionDef  // The action to take if this case is chosen.
-];
+export interface SwitchCaseDef {
+	/** The value being compared in this case. */
+	readonly if: any;
+	/** The action to undertake if this case is selected. */
+	readonly then: ActionDef;
+}
 
 
 /**
@@ -49,6 +50,7 @@ export type SwitchCaseDef = [
  * else action is present, that action is used.
  */
 export interface SwitchTriggerDef<Category> extends TriggerDefBase<Category> {
+	readonly key: PropertyKey;
 	readonly switch: SwitchCaseDef[];
 	readonly else?: ActionDef;
 }
@@ -130,17 +132,17 @@ export class Factory<Category, EventData> {
 	}
 
 	action(def: ActionDef): Action<Event<Category, EventData>> {
-		const factory = this.actionFactories.get(def.type);
+		const factory = this.actionFactories.get(def.do);
 		if (!factory) {
-			throw new Error(`No '${def.type}' factory`);
+			throw new Error(`No '${def.do}' factory`);
 		}
 		return factory(def);
 	}
 
 	predicate(def: PredicateDef) {
-		const factory = this.conditionFactories.get(def.type);
+		const factory = this.conditionFactories.get(def.pred);
 		if (!factory) {
-			throw new Error(`No '${def.type}' factory`);
+			throw new Error(`No '${def.pred}' factory`);
 		}
 		return factory(def);
 	}
@@ -178,7 +180,7 @@ export class Factory<Category, EventData> {
 	{
 		return {
 			trigger: linearTrigger,
-			pred: def.when ? this.predicate(def.when) : foreverTrue,
+			pred: def.if ? this.predicate(def.if) : foreverTrue,
 			yes: def.then ? this.action(def.then) : noop,
 			no: def.else ? this.action(def.else) : noop,
 		};
@@ -187,12 +189,13 @@ export class Factory<Category, EventData> {
 	protected makeSwitchContext(def: SwitchTriggerDef<Category>)
 		:	SwitchContext<Category, EventData>
 	{
+		const key = def.key;
 		return {
 			trigger: switchTrigger,
 			cases: def.switch.map(
 				(c: SwitchCaseDef): SwitchCase<Category, EventData> => [
-					checkValue.bind(null, c[0], c[1]),
-					this.action(c[2])
+					checkValue.bind(null, key, c.if),
+					this.action(c.then)
 				]
 			),
 			else: def.else ? this.action(def.else) : noop,
@@ -250,7 +253,10 @@ function checkValue<Category>(
 	:	boolean
 {
 	if (!event.data.hasOwnProperty(key)) {
-		throw new Error("No such key");
+		throw new Error(typeof key === 'symbol'
+			?	'No such key'
+			:	`No '${key}' key`
+		);
 	}
 	return event.data[key] === expected;
 }
