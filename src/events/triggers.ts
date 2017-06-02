@@ -249,5 +249,8 @@ function checkValue<Category>(
 )
 	:	boolean
 {
+	if (!event.data.hasOwnProperty(key)) {
+		throw new Error("No such key");
+	}
 	return event.data[key] === expected;
 }
