@@ -131,11 +131,49 @@ describe("Trigger Factory", (): void => {
 		describe("returns the n-ary relation for", () => {
 			const eventKey = 'eventkey';
 
-			function runTest(
+			function testBoolean(
+				rel: triggers.RelationKey,
+				exp: [boolean, boolean, boolean, boolean]
+			)
+				:	void
+			{
+				[
+					[true, true],
+					[false, true],
+					[true, false],
+					[false, false]
+				].forEach(([keyVal, setVal], i) => {
+					const msg = `${rel}(${keyVal}, ${setVal}) === ${exp[i]}`;
+					it(msg, () => {
+						const event = makeEvent({data: {[eventKey]: keyVal}});
+						const predicate = factory.compile({
+							[rel]: [{key: eventKey}, {val: setVal}],
+						});
+						msg;
+						expect(predicate(event)).toBe(exp[i]);
+					});
+				});
+			}
+
+			describe("all:", (): void => {
+				testBoolean('all', [true, false, false, false]);
+			});
+			describe("some:", (): void => {
+				testBoolean('some', [true, true, true, false]);
+			});
+			describe("none:", (): void => {
+				testBoolean('none', [false, false, false, true]);
+			});
+			describe("nall:", (): void => {
+				testBoolean('nall', [false, true, true, true]);
+			});
+
+
+			function testNumeric(
 				relation: triggers.RelationKey,
 				expectation: boolean[]
 			)
-			:	void
+				:	void
 			{
 				const value = 5;
 				const predicate = factory.compile({
@@ -155,21 +193,20 @@ describe("Trigger Factory", (): void => {
 				}
 			}
 
-
 			it("eq", () => {
-				runTest('eq', [false, true, false]);
+				testNumeric('eq', [false, true, false]);
 			});
 			it("lt", () => {
-				runTest('lt', [true, false, false]);
+				testNumeric('lt', [true, false, false]);
 			});
 			it("lte", () => {
-				runTest('lte', [true, true, false]);
+				testNumeric('lte', [true, true, false]);
 			});
 			it("gt", () => {
-				runTest('gt', [false, false, true]);
+				testNumeric('gt', [false, false, true]);
 			});
 			it("gte", () => {
-				runTest('gte', [false, true, true]);
+				testNumeric('gte', [false, true, true]);
 			});
 		});
 
@@ -207,25 +244,25 @@ describe("Trigger Factory", (): void => {
 				});
 			}
 
-			describe("all", (): void => {
-				check('all', [true, true, true], true);
-				check('all', [true, false, true], false);
-				check('all', [false, false, true], false);
-				check('all', [false, false, false], false);
+			describe("allof", (): void => {
+				check('allof', [true, true, true], true);
+				check('allof', [true, false, true], false);
+				check('allof', [false, false, true], false);
+				check('allof', [false, false, false], false);
 			});
 
-			describe("some", (): void => {
-				check('some', [true, true, true], true);
-				check('some', [true, false, true], true);
-				check('some', [false, false, true], true);
-				check('some', [false, false, false], false);
+			describe("someof", (): void => {
+				check('someof', [true, true, true], true);
+				check('someof', [true, false, true], true);
+				check('someof', [false, false, true], true);
+				check('someof', [false, false, false], false);
 			});
 
-			describe("none", (): void => {
-				check('none', [true, true, true], false);
-				check('none', [true, false, true], false);
-				check('none', [false, false, true], false);
-				check('none', [false, false, false], true);
+			describe("noneof", (): void => {
+				check('noneof', [true, true, true], false);
+				check('noneof', [true, false, true], false);
+				check('noneof', [false, false, true], false);
+				check('noneof', [false, false, false], true);
 			});
 		});
 

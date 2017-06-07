@@ -1,4 +1,4 @@
-import {foreverTrue, noop, uniqueKey} from 'jam/util/misc';
+import {foreverTrue, noop, uniqueKey, forceArray} from 'jam/util/misc';
 import * as nary from 'jam/util/naryRelations';
 
 import {OptionsHandlerItem, Event} from './Manager';
@@ -30,11 +30,17 @@ export type ArgumentDef = (
 );
 
 
-export interface EqRelationDef { readonly eq: ArgumentDef[]; }
-export interface LtRelationDef { readonly lt: ArgumentDef[]; }
-export interface LteRelationDef { readonly lte: ArgumentDef[]; }
-export interface GtRelationDef { readonly gt: ArgumentDef[]; }
-export interface GteRelationDef { readonly gte: ArgumentDef[]; }
+export type RelationArgs = ArgumentDef | ArgumentDef[];
+
+
+export interface AllRelationDef { readonly all: RelationArgs; }
+export interface SomeRelationDef { readonly some: RelationArgs; }
+export interface NoneRelationDef { readonly none: RelationArgs; }
+export interface EqRelationDef { readonly eq: RelationArgs; }
+export interface LtRelationDef { readonly lt: RelationArgs; }
+export interface LteRelationDef { readonly lte: RelationArgs; }
+export interface GtRelationDef { readonly gt: RelationArgs; }
+export interface GteRelationDef { readonly gte: RelationArgs; }
 
 
 /** Definition for a relation which can be used to build predicates. */
@@ -47,7 +53,7 @@ export type RelationDef = (
 );
 
 
-export interface AllPredicateDef { readonly all: PredicateDef[]; }
+export interface AllPredicateDef { readonly allof: PredicateDef[]; }
 export interface NonePredicateDef { readonly none: PredicateDef[]; }
 export interface SomePredicateDef { readonly some: PredicateDef[]; }
 
@@ -74,10 +80,20 @@ export type PredicateDef = (
 );
 
 
-export type RelationKey = 'eq' | 'lt' | 'lte' | 'gt' | 'gte';
+export type RelationKey = (
+	'all' |
+	'none' |
+	'some' |
+	'nall' |
+	'eq' |
+	'lt' |
+	'lte' |
+	'gt' |
+	'gte'
+);
 
 
-export type CompositePredicateKey = 'all' | 'none' | 'some';
+export type CompositePredicateKey = 'allof' | 'noneof' | 'someof';
 
 
 export type CustomPredicateKey = string;
@@ -195,7 +211,7 @@ export interface SwitchContext<Category, EventData>
 }
 
 
-const some = (args: Iterable<boolean>): boolean => {
+const someof = (args: Iterable<boolean>): boolean => {
 	for (let arg of args) {
 		if (arg) {
 			return true;
@@ -205,18 +221,34 @@ const some = (args: Iterable<boolean>): boolean => {
 };
 
 
-export const composites = {
-	all(args: Iterable<boolean>): boolean {
-		for (let arg of args) {
-			if (!arg) {
-				return false;
-			}
+const allof = (args: Iterable<boolean>): boolean => {
+	for (let arg of args) {
+		if (!arg) {
+			return false;
 		}
-		return true;
-	},
-	some,
-	none: (args: Iterable<boolean>): boolean => !some(args),
+	}
+	return true;
 };
+
+
+export const composites = {
+	allof,
+	someof,
+	noneof: (args: Iterable<boolean>): boolean => !someof(args),
+	nallof: (args: Iterable<boolean>): boolean => !allof(args),
+};
+
+
+const relations: {readonly [key: string]: nary.NAryRelation;} = Object.assign(
+	{},
+	nary.relations,
+	{
+		all: composites.allof,
+		none: composites.noneof,
+		some: composites.someof,
+		nall: composites.nallof,
+	}
+);
 
 
 export class Factory<Category, EventData extends {
@@ -287,10 +319,10 @@ export class Factory<Category, EventData extends {
 	compile(def: PredicateDef): Predicate<Event<Category, EventData>> {
 		const key = uniqueKey(def) as PredicateKey;
 
-		if (nary.relations[key as RelationKey]) {
+		if (relations[key as RelationKey]) {
 			return evalPredicate.bind({
-				rel: nary.relations[key as RelationKey],
-				args: ((def as any)[key] as ArgumentDef[]).map(
+				rel: relations[key as RelationKey],
+				args: forceArray((def as any)[key]).map(
 					arg => this.argument(arg)),
 			});
 		}
@@ -298,7 +330,7 @@ export class Factory<Category, EventData extends {
 		if (composites[key as CompositePredicateKey]) {
 			return evalPredicate.bind({
 				rel: composites[key as CompositePredicateKey],
-				args: ((def as any)[key] as PredicateDef[]).map(
+				args: forceArray((def as any)[key]).map(
 					arg => this.compile(arg)),
 			});
 		}

@@ -91,6 +91,11 @@ export function anyKey<T>(x: T): keyof T {
 }
 
 
+export function forceArray<T>(x: T | T[]): T[] {
+	return (x instanceof Array) ? x : [x];
+}
+
+
 export interface Dict<V> {
 	[key: number]: V;
 	[key: string]: V;
