@@ -3,6 +3,7 @@ import * as triggers from 'jam/events/triggers';
 
 
 interface EventData {
+	readonly value?: any;
 }
 
 
@@ -15,6 +16,7 @@ type Context = triggers.Context<Category, EventData>;
 type TriggerDef = triggers.TriggerDef<Category>;
 type LinearTriggerDef = triggers.LinearTriggerDef<Category>;
 type SwitchTriggerDef = triggers.SwitchTriggerDef<Category>;
+type ArgumentGetter = triggers.ArgumentGetter<Event>;
 
 
 describe("Trigger Factory", (): void => {
@@ -62,28 +64,197 @@ describe("Trigger Factory", (): void => {
 		});
 	});
 
-	describe("predicate method", (): void => {
-		it("throws if the predicate hasn't been defined", (): void => {
-			expect((): void => {
-				factory.predicate({pred: 'not defined'});
-			}).toThrow();
-		});
-		it("constructs a predicate accordingly", (): void => {
-			const predType = 'PredicateType';
-			let value = false;
-			factory.addPredicateFactory(predType, (): Predicate => {
-				return (): boolean => value;
+	describe("argument method", (): void => {
+		const uniqueValue = Symbol('uniqueValue');
+
+		describe("given an EventArgumentDef, returns a prop getter", () => {
+			const uniqueKey = Symbol('uniqueKey');
+			let fn: ArgumentGetter;
+
+			beforeEach((): void => {
+				fn = factory.argument({
+					key: uniqueKey,
+				});
 			});
 
-			const predicate = factory.predicate({pred: predType});
-			expect(predicate(makeEvent())).toBe(value);
+			it("function", (): void => {
+				const event = makeEvent({
+					data: {
+						[uniqueKey]: uniqueValue,
+					},
+				});
+				expect(fn(event)).toBe(uniqueValue);
+			});
+			it("which throws if the event has no such property", (): void => {
+				const event = makeEvent();
+				expect((): void => {
+					fn(event);
+				}).toThrow();
+			});
+		});
 
-			value = true;
-			expect(predicate(makeEvent())).toBe(value);
+		describe("given a ValueArgumentDef", (): void => {
+			it("returns a value getter", (): void => {
+				const fn = factory.argument({
+					val: uniqueValue,
+				});
+				expect(fn(makeEvent())).toBe(uniqueValue);
+			});
+		});
+
+		describe("given a CustomArgumentDef", (): void => {
+			it("uses the appropriate custom argument factory", (): void => {
+				const value = Symbol('value');
+				factory.addCustomArgumentFactory('custom', () => (
+					() => value
+				));
+				const getter = factory.argument({
+					'custom': null,
+				});
+				expect(getter(makeEvent())).toBe(value);
+			});
+			it("throws if no such factory exists", (): void => {
+				expect((): void => {
+					factory.argument({'no such': 'factory'});
+				}).toThrow();
+			});
+		});
+
+		it("throws if the definition is invalid", (): void => {
+			expect((): void => {
+				factory.argument({});
+			}).toThrow();
 		});
 	});
 
-	describe("makeContext method, when", () => {
+	describe("compile method", (): void => {
+		describe("returns the n-ary relation for", () => {
+			const eventKey = 'eventkey';
+
+			function runTest(
+				relation: triggers.RelationKey,
+				expectation: boolean[]
+			)
+			:	void
+			{
+				const value = 5;
+				const predicate = factory.compile({
+					[relation]: [
+						{key: eventKey},
+						{val: value}
+					],
+				});
+
+				for (let i = 0; i < 3; ++i) {
+					const event = makeEvent({
+						data: {
+							[eventKey]: value + i - 1,
+						},
+					});
+					expect(predicate(event)).toBe(expectation[i]);
+				}
+			}
+
+
+			it("eq", () => {
+				runTest('eq', [false, true, false]);
+			});
+			it("lt", () => {
+				runTest('lt', [true, false, false]);
+			});
+			it("lte", () => {
+				runTest('lte', [true, true, false]);
+			});
+			it("gt", () => {
+				runTest('gt', [false, false, true]);
+			});
+			it("gte", () => {
+				runTest('gte', [false, true, true]);
+			});
+		});
+
+		describe("returns the correct predicate for", (): void => {
+			beforeEach((): void => {
+				// Hijack the compile method to return a trivial predicate when
+				// given a test-relation definition.
+				const originalCompile = factory.compile;
+				function fakeCompile(def: any): any {
+					const returnValue = def.ret;
+					if (typeof returnValue === 'boolean') {
+						return () => returnValue;
+					}
+
+					return originalCompile.apply(this, arguments);
+				};
+				spyOn(factory, 'compile').and.callFake(fakeCompile);
+			});
+
+			function check(
+				relation: string,
+				input: boolean[],
+				asExpected: boolean
+			)
+				:	void
+			{
+				it(`(example: ${relation}(${input}) is ${asExpected})`, () => {
+					const predicate = factory.compile({
+						[relation]: input.map(returnValue => ({
+							ret: returnValue,
+						})),
+					});
+					const event = makeEvent();
+					expect(predicate(event)).toBe(asExpected);
+				});
+			}
+
+			describe("all", (): void => {
+				check('all', [true, true, true], true);
+				check('all', [true, false, true], false);
+				check('all', [false, false, true], false);
+				check('all', [false, false, false], false);
+			});
+
+			describe("some", (): void => {
+				check('some', [true, true, true], true);
+				check('some', [true, false, true], true);
+				check('some', [false, false, true], true);
+				check('some', [false, false, false], false);
+			});
+
+			describe("none", (): void => {
+				check('none', [true, true, true], false);
+				check('none', [true, false, true], false);
+				check('none', [false, false, true], false);
+				check('none', [false, false, false], true);
+			});
+		});
+
+		describe("when using custom predicates", (): void => {
+			it("constructs a predicate accordingly", (): void => {
+				const key = 'PredicateType';
+				let value = false;
+				factory.addCustomPredicateFactory(key, (): Predicate => {
+					return (): boolean => value;
+				});
+
+				const predicate = factory.compile({
+					[key]: null,
+				});
+				expect(predicate(makeEvent())).toBe(value);
+
+				value = true;
+				expect(predicate(makeEvent())).toBe(value);
+			});
+		});
+
+		it("throws if the predicate hasn't been defined", (): void => {
+			expect((): void => {
+				factory.compile({'not defined': null});
+			}).toThrow();
+		});
+	});
+
+	describe("makeHandlerContext method, when", () => {
 		let thenCount = 0;
 		let elseCount = 0;
 		let predCount = 0;
@@ -110,7 +281,7 @@ describe("Trigger Factory", (): void => {
 				++predCount;
 				return predicateReturnValue;
 			}
-			factory.addPredicateFactory('pred', () => predicate);
+			factory.addCustomPredicateFactory('pred', () => predicate);
 		});
 
 		describe("given a linear trigger, returns a context that", () => {
@@ -119,7 +290,7 @@ describe("Trigger Factory", (): void => {
 					on: 'category',
 					then: {do: 'MyAction'},
 				};
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent());
 				expect(thenCount).toBe(1);
 				expect(elseCount).toBe(0);
@@ -130,7 +301,7 @@ describe("Trigger Factory", (): void => {
 					on: 'category',
 					if: {pred: 'pred'},
 				};
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent());
 				expect(predCount).toBe(1);
 			});
@@ -140,7 +311,7 @@ describe("Trigger Factory", (): void => {
 					on: 'category',
 					if: {pred: 'pred'},
 				};
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent());
 				expect(predCount).toBe(1);
 			});
@@ -152,7 +323,7 @@ describe("Trigger Factory", (): void => {
 					then: {do: 'MyAction'},
 					else: {do: 'MyOtherAction'},
 				};
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent());
 				expect(predCount).toBe(1);
 				expect(thenCount).toBe(1);
@@ -166,7 +337,7 @@ describe("Trigger Factory", (): void => {
 					then: {do: 'MyAction'},
 					else: {do: 'MyOtherAction'},
 				};
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent());
 				expect(predCount).toBe(1);
 				expect(thenCount).toBe(0);
@@ -222,7 +393,7 @@ describe("Trigger Factory", (): void => {
 			});
 
 			it("calls the action of the matching case", () => {
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent({
 					data: {
 						[propKey]: 'a'
@@ -240,7 +411,7 @@ describe("Trigger Factory", (): void => {
 					else: {do: 'ActionElse'},
 				});
 
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent({
 					data: {
 						[propKey]: 'd',
@@ -254,7 +425,7 @@ describe("Trigger Factory", (): void => {
 				});
 			});
 			it("does nothing if no default and no such value found", () => {
-				const context: Context = factory.makeContext(def);
+				const context: Context = factory.makeHandlerContext(def);
 				context.trigger(makeEvent({
 					data: {
 						[propKey]: 'd',
@@ -266,6 +437,14 @@ describe("Trigger Factory", (): void => {
 					c: 0,
 					else: 0,
 				});
+			});
+			it("throws if evaluating an event with no such key", (): void => {
+				const context: Context = factory.makeHandlerContext(def);
+				expect((): void => {
+					context.trigger(makeEvent({
+						data: {},
+					}));
+				}).toThrow();
 			});
 		});
 	});

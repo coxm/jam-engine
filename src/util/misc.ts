@@ -68,6 +68,29 @@ export function collect<T>(array: T[][]): T[] {
 }
 
 
+export function uniqueKey<T>(x: T): keyof T {
+	let unique: any = undefined;
+	for (let key in x) {
+		if (unique !== undefined) {
+			throw new Error("Key not unique");
+		}
+		unique = key;
+	}
+	if (unique === undefined) {
+		throw new Error("No keys");
+	}
+	return unique;
+}
+
+
+export function anyKey<T>(x: T): keyof T {
+	for (let key in x) {
+		return key;
+	}
+	throw new Error("No keys");
+}
+
+
 export interface Dict<V> {
 	[key: number]: V;
 	[key: string]: V;

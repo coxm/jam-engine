@@ -25,6 +25,7 @@ window.__karma__.start = function() {
 	System.config({
 		defaultJSExtensions: true,
 		map: {
+			"lodash": "node_modules/lodash",
 			"systemjs": "node_modules/systemjs/dist/system.js",
 			"jam": "build/js",
 		},

@@ -1,12 +1,93 @@
-import {foreverTrue, noop} from 'jam/util/misc';
+import {foreverTrue, noop, uniqueKey} from 'jam/util/misc';
+import * as nary from 'jam/util/naryRelations';
 
 import {OptionsHandlerItem, Event} from './Manager';
 
 
-/** A definition for a predicate which checks whether to dispatch a trigger. */
-export interface PredicateDef {
-	readonly pred: PropertyKey;
+/** Definition for a relation argument to be obtained from an event. */
+export interface EventArgumentDef {
+	readonly key: PropertyKey;
 }
+
+
+/** Definition for a relation argument provided as a value. */
+export interface ValueArgumentDef {
+	readonly val: any;
+}
+
+
+/** Definition for a custom argument type. */
+export interface CustomArgumentDef {
+	readonly [uniqueKey: string]: any;
+}
+
+
+/** Definition for an argument to be checked in a relation. */
+export type ArgumentDef = (
+	EventArgumentDef |
+	ValueArgumentDef |
+	CustomArgumentDef
+);
+
+
+export interface EqRelationDef { readonly eq: ArgumentDef[]; }
+export interface LtRelationDef { readonly lt: ArgumentDef[]; }
+export interface LteRelationDef { readonly lte: ArgumentDef[]; }
+export interface GtRelationDef { readonly gt: ArgumentDef[]; }
+export interface GteRelationDef { readonly gte: ArgumentDef[]; }
+
+
+/** Definition for a relation which can be used to build predicates. */
+export type RelationDef = (
+	EqRelationDef |
+	LtRelationDef |
+	LteRelationDef |
+	GtRelationDef |
+	GteRelationDef
+);
+
+
+export interface AllPredicateDef { readonly all: PredicateDef[]; }
+export interface NonePredicateDef { readonly none: PredicateDef[]; }
+export interface SomePredicateDef { readonly some: PredicateDef[]; }
+
+
+/** Definition for a predicate built from other predicates. */
+export type CompositePredicateDef = (
+	AllPredicateDef |
+	NonePredicateDef |
+	SomePredicateDef
+);
+
+
+/** Base interface for a custom predicate type. */
+export interface CustomPredicateDef {
+	readonly [uniqueKey: string]: any;
+}
+
+
+/** A definition for a function which checks whether to dispatch a trigger. */
+export type PredicateDef = (
+	RelationDef |
+	CompositePredicateDef |
+	CustomPredicateDef
+);
+
+
+export type RelationKey = 'eq' | 'lt' | 'lte' | 'gt' | 'gte';
+
+
+export type CompositePredicateKey = 'all' | 'none' | 'some';
+
+
+export type CustomPredicateKey = string;
+
+
+export type PredicateKey = (
+	RelationKey |
+	CompositePredicateKey |
+	CustomPredicateKey
+);
 
 
 /** A definition for a triggerable action. */
@@ -15,6 +96,7 @@ export interface ActionDef {
 }
 
 
+/** Properties common to all trigger definitions. */
 export interface TriggerDefBase<Category> {
 	readonly on: Category;
 	readonly limit?: number;
@@ -28,12 +110,13 @@ export interface TriggerDefBase<Category> {
  * is satisfied, and the `else` action otherwise.
  */
 export interface LinearTriggerDef<Category> extends TriggerDefBase<Category> {
-	readonly if?: PredicateDef;
+	readonly if?: PredicateDef | RelationDef;
 	readonly then?: ActionDef;
 	readonly else?: ActionDef;
 }
 
 
+/** Definition for an individual switch statement case. */
 export interface SwitchCaseDef {
 	/** The value being compared in this case. */
 	readonly if: any;
@@ -56,26 +139,32 @@ export interface SwitchTriggerDef<Category> extends TriggerDefBase<Category> {
 }
 
 
+/** Definition for any kind of trigger. */
 export type TriggerDef<Category> = (
 	LinearTriggerDef<Category> |
 	SwitchTriggerDef<Category>
 );
 
 
-export interface Action<EventOb> {
-	(event: EventOb): void;
-}
+export type Action<EventOb> = (ev: EventOb) => void;
 
 
-export interface Predicate<EventOb> {
-	(event: EventOb): boolean;
-}
+export type ArgumentGetter<EventOb> = (ev: EventOb) => any;
 
 
-export type PredicateFactory<Event> = (def: PredicateDef) => Predicate<Event>;
+export type Predicate<EventOb> = (ev: EventOb) => boolean;
 
 
-export type ActionFactory<Event> = (def: ActionDef) => Action<Event>;
+export type ActionGetter = () => PropertyKey;
+
+
+export type PredicateFactory<EventOb> = (def: any) => Predicate<EventOb>;
+
+
+export type ActionFactory<EventOb> = (def: ActionDef) => Action<EventOb>;
+
+
+export type ArgumentFactory<EventOb> = (def: any) => ArgumentGetter<EventOb>;
 
 
 export interface Context<Category, EventData> {
@@ -106,43 +195,141 @@ export interface SwitchContext<Category, EventData>
 }
 
 
-export class Factory<Category, EventData> {
+const some = (args: Iterable<boolean>): boolean => {
+	for (let arg of args) {
+		if (arg) {
+			return true;
+		}
+	}
+	return false;
+};
+
+
+export const composites = {
+	all(args: Iterable<boolean>): boolean {
+		for (let arg of args) {
+			if (!arg) {
+				return false;
+			}
+		}
+		return true;
+	},
+	some,
+	none: (args: Iterable<boolean>): boolean => !some(args),
+};
+
+
+export class Factory<Category, EventData extends {
+	readonly [key: number]: any;
+	readonly [key: string]: any;
+}> {
+	private argumentFactories =
+		new Map<PropertyKey, ArgumentFactory<Event<Category, EventData>>>();
+
+	private conditionFactories =
+		new Map<PropertyKey, PredicateFactory<Event<Category, EventData>>>();
+
 	private actionFactories =
 		new Map<PropertyKey, ActionFactory<Event<Category, EventData>>>();
-
-	private conditionFactories =	
-		new Map<PropertyKey, PredicateFactory<Event<Category, EventData>>>();
 
 	addActionFactory(
 		type: PropertyKey,
 		factory: ActionFactory<Event<Category, EventData>>
 	)
-		: void
+		:	void
 	{
 		this.actionFactories.set(type, factory)
 	}
 
-	addPredicateFactory(
-		type: PropertyKey,
+	addCustomPredicateFactory(
+		type: string,
 		factory: PredicateFactory<Event<Category, EventData>>
 	)
-		: void
+		:	void
 	{
 		this.conditionFactories.set(type, factory);
+	}
+
+	addCustomArgumentFactory(
+		type: string,
+		factory: ArgumentFactory<Event<Category, EventData>>
+	)
+		:	void
+	{
+		this.argumentFactories.set(type, factory);
+	}
+
+	/**
+	 * Compile a predicate.
+	 *
+	 * @param def a predicate definition.
+	 * @returns a compiled predicate function.
+	 *
+	 * @example
+	 *   const predicate = factory.compile({
+	 *       all: [
+	 *           {key: 'eventProperty1'},
+	 *           {key: 'eventProperty2'}
+	 *       ]
+	 *   });
+	 *   const event = {
+	 *       category: 'category',
+	 *       meta: null,
+	 *       data: {
+	 *           eventProperty1: true,
+	 *           eventProperty2: false,
+	 *       },
+	 *   };
+	 *   expect(predicate(event)).toBe(false);
+	 *   event.data.eventProperty2 = true;
+	 *   expect(predicate(event)).toBe(true);
+	 */
+	compile(def: PredicateDef): Predicate<Event<Category, EventData>> {
+		const key = uniqueKey(def) as PredicateKey;
+
+		if (nary.relations[key as RelationKey]) {
+			return evalPredicate.bind({
+				rel: nary.relations[key as RelationKey],
+				args: ((def as any)[key] as ArgumentDef[]).map(
+					arg => this.argument(arg)),
+			});
+		}
+
+		if (composites[key as CompositePredicateKey]) {
+			return evalPredicate.bind({
+				rel: composites[key as CompositePredicateKey],
+				args: ((def as any)[key] as PredicateDef[]).map(
+					arg => this.compile(arg)),
+			});
+		}
+
+		const factory = this.conditionFactories.get(key);
+		if (!factory) {
+			throw new Error("Invalid predicate");
+		}
+		return factory(def);
+	}
+
+	argument(def: ArgumentDef): ArgumentGetter<Event<Category, EventData>> {
+		if ((def as EventArgumentDef).key) {
+			return getEventProperty.bind(null, (def as EventArgumentDef).key);
+		}
+		if (def.hasOwnProperty('val')) {
+			const val = (def as ValueArgumentDef).val;
+			return () => val;
+		}
+
+		const factory = this.argumentFactories.get(uniqueKey(def));
+		if (!factory) {
+			throw new Error("Invalid argument");
+		}
+		return factory(def);
 	}
 
 	action(def: ActionDef): Action<Event<Category, EventData>> {
 		const factory = this.actionFactories.get(def.do);
 		if (!factory) {
 			throw new Error(`No '${def.do}' factory`);
-		}
-		return factory(def);
-	}
-
-	predicate(def: PredicateDef) {
-		const factory = this.conditionFactories.get(def.pred);
-		if (!factory) {
-			throw new Error(`No '${def.pred}' factory`);
 		}
 		return factory(def);
 	}
@@ -155,7 +342,7 @@ export class Factory<Category, EventData> {
 			handleEvent,
 			{
 				limit: def.limit,
-				context: this.makeContext(def),
+				context: this.makeHandlerContext(def),
 			}
 		];
 	}
@@ -166,7 +353,7 @@ export class Factory<Category, EventData> {
 		return defs.map(def => this.handler(def));
 	}
 
-	makeContext(def: TriggerDef<Category>)
+	makeHandlerContext(def: TriggerDef<Category>)
 		: Context<Category, EventData>
 	{
 		return ((<SwitchTriggerDef<Category>> def).switch
@@ -180,7 +367,7 @@ export class Factory<Category, EventData> {
 	{
 		return {
 			trigger: linearTrigger,
-			pred: def.if ? this.predicate(def.if) : foreverTrue,
+			pred: def.if ? this.compile(def.if) : foreverTrue,
 			yes: def.then ? this.action(def.then) : noop,
 			no: def.else ? this.action(def.else) : noop,
 		};
@@ -206,11 +393,11 @@ export class Factory<Category, EventData> {
 
 function handleEvent<Category, EventData>(
 	this: Context<Category, EventData>,
-	event: Event<Category, EventData>
+	ev: Event<Category, EventData>
 )
 	:	void
 {
-	this.trigger(event);
+	this.trigger(ev);
 }
 
 
@@ -245,18 +432,56 @@ function switchTrigger<Category, EventData>(
 }
 
 
-function checkValue<Category>(
+function checkValue<Category, EventData extends {
+	readonly [key: number]: any;
+	readonly [key: string]: any;
+}> (
 	key: PropertyKey,
 	expected: any,
-	event: Event<Category, any>
+	ev: Event<Category, EventData>
 )
 	:	boolean
 {
-	if (!event.data.hasOwnProperty(key)) {
-		throw new Error(typeof key === 'symbol'
-			?	'No such key'
-			:	`No '${key}' key`
-		);
+	if (!ev.data.hasOwnProperty(key)) {
+		throw new Error('No such key');
 	}
-	return event.data[key] === expected;
+	return ev.data[key] === expected;
+}
+
+
+function getEventProperty<Category, EventData extends {
+	readonly [key: number]: any;
+	readonly [key: string]: any;
+}>(
+	key: PropertyKey,
+	ev: Event<Category, EventData>
+)
+	:	any
+{
+	if (!ev.data.hasOwnProperty(key)) {
+		throw new Error("No such key");
+	}
+	return ev.data[key];
+}
+
+
+function* argumentIterator<EventOb>(
+	ev: EventOb,
+	args: Iterable<ArgumentGetter<EventOb>>
+)
+	:	Iterable<boolean>
+{
+	for (let arg of args) {
+		yield arg(ev);
+	}
+}
+
+
+function evalPredicate<EventOb>(
+	this: {rel: nary.NAryRelation; args: ArgumentGetter<EventOb>[];},
+	ev: EventOb
+)
+	:	boolean
+{
+	return this.rel(argumentIterator(ev, this.args));
 }
