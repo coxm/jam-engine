@@ -388,7 +388,7 @@ describe("Trigger Factory", (): void => {
 				a: 0,
 				b: 0,
 				c: 0,
-				else: 0,
+				default: 0,
 			};
 			let def: SwitchTriggerDef;
 
@@ -397,7 +397,7 @@ describe("Trigger Factory", (): void => {
 					a: 0,
 					b: 0,
 					c: 0,
-					else: 0,
+					default: 0,
 				};
 
 				def = {
@@ -413,7 +413,7 @@ describe("Trigger Factory", (): void => {
 				const actionA = (): void => { ++actionCounts.a; };
 				const actionB = (): void => { ++actionCounts.b; };
 				const actionC = (): void => { ++actionCounts.c; };
-				const actionElse = (): void => { ++actionCounts.else; };
+				const actionElse = (): void => { ++actionCounts.default; };
 
 				factory.addActionFactory('ActionA', () => {
 					return actionA;
@@ -440,12 +440,12 @@ describe("Trigger Factory", (): void => {
 					a: 1,
 					b: 0,
 					c: 0,
-					else: 0,
+					default: 0,
 				});
 			});
 			it("calls the default if no such value is found", () => {
 				def = Object.assign({}, def, {
-					else: {do: 'ActionElse'},
+					default: {do: 'ActionElse'},
 				});
 
 				const context: Context = factory.makeHandlerContext(def);
@@ -458,7 +458,7 @@ describe("Trigger Factory", (): void => {
 					a: 0,
 					b: 0,
 					c: 0,
-					else: 1,
+					default: 1,
 				});
 			});
 			it("does nothing if no default and no such value found", () => {
@@ -472,7 +472,7 @@ describe("Trigger Factory", (): void => {
 					a: 0,
 					b: 0,
 					c: 0,
-					else: 0,
+					default: 0,
 				});
 			});
 			it("throws if evaluating an event with no such key", (): void => {

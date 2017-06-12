@@ -146,12 +146,12 @@ export interface SwitchCaseDef {
  *
  * The resulting trigger will search through the list of cases for a value. If
  * the value is found, the corresponding action is executed. Otherwise, if the
- * else action is present, that action is used.
+ * default action is present, that action is used.
  */
 export interface SwitchTriggerDef<Category> extends TriggerDefBase<Category> {
 	readonly key: PropertyKey;
 	readonly switch: SwitchCaseDef[];
-	readonly else?: ActionDef;
+	readonly default?: ActionDef;
 }
 
 
@@ -207,7 +207,7 @@ export interface SwitchContext<Category, EventData>
 	extends Context<Category, EventData>
 {
 	readonly cases: SwitchCase<Category, EventData>[];
-	readonly else: Action<Event<Category, EventData>>;
+	readonly default: Action<Event<Category, EventData>>;
 }
 
 
@@ -417,7 +417,7 @@ export class Factory<Category, EventData extends {
 					this.action(c.then)
 				]
 			),
-			else: def.else ? this.action(def.else) : noop,
+			default: def.default ? this.action(def.default) : noop,
 		};
 	}
 }
@@ -460,7 +460,7 @@ function switchTrigger<Category, EventData>(
 			return;
 		}
 	}
-	this.else(ev);
+	this.default(ev);
 }
 
 
