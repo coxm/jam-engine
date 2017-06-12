@@ -1,6 +1,6 @@
 {
   "name": "jam",
-  "version": "13.0.0",
+  "version": "14.0.0",
   "description": "Game jam engine",
   "main": "build/index.js",
   "scripts": {
