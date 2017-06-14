@@ -154,6 +154,11 @@ export class Manager<Category, Data> {
 	 *
 	 * @param items - the categories and corresponding handlers.
 	 * @param options - options for configuring the batch.
+	 * @param options.id - an ID for an existing batch. If necessary a new
+	 * batch is created.
+	 * @param options.limit - an optional default for the number of times
+	 * handlers in this batch will be called.
+	 * @param options.context - an optional default context.
 	 * @returns a unique ID for the batch, which can be used to remove all
 	 * handlers involved.
 	 */
