@@ -264,6 +264,9 @@ export class Manager<State, Trigger> {
 				case Relation.child:
 					nextID = this.curr.children[0];
 					break;
+				case Relation.same:
+					nextID = this.curr.id;
+					break;
 			}
 		}
 		this._jump(nextID, trigger, transition.exit);

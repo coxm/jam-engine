@@ -6,4 +6,6 @@ export const enum Relation {
 	child,
 	/** The next state is the current state's parent. */
 	parent,
+	/** The next state is the current one. */
+	same,
 }
