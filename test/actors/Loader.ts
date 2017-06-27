@@ -98,7 +98,7 @@ describe("Actor Loader", (): void => {
 				};
 
 				spyOn(loader, 'json').and.callFake(
-					(rel: string): PartialActorDef =>
+					(rel: string): Promise<PartialActorDef> =>
 						Promise.resolve(files[rel])
 				);
 			});

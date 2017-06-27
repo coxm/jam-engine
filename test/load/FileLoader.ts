@@ -23,7 +23,7 @@ class FullPathCachingFileLoader extends FileLoader {
 	}
 
 	@cacheUnderFullPath
-	json(relpath: string): Promise<string> {
+	json(relpath: string): Promise<any> {
 		return super.json(relpath);
 	}
 }
@@ -38,7 +38,7 @@ class TypeAndFullPathCachingFileLoader extends FileLoader {
 	}
 
 	@cacheUnderTypeAndFullPath
-	json(relpath: string): Promise<string> {
+	json(relpath: string): Promise<any> {
 		return super.json(relpath);
 	}
 }

@@ -413,10 +413,7 @@ export function wrap<Wrapped>(
 }
 
 
-/**
- * Resume a state which may be uninitialised, paused, and/or detached.
- *
- */
+/** Resume a state which may be uninitialised, paused, and/or detached. */
 export const resume = (state: State): Promise<void> => (
 	state.init().then((): void => {
 		state.pause();
@@ -427,21 +424,9 @@ export const resume = (state: State): Promise<void> => (
 );
 
 
-/**
- * Reset a state.
- *
- * Can be used as a trigger exit function for a `StateManager`.
- */
+/** Reset a state. */
 export const reset = (state: State): void => {
 	state.pause();
 	state.detach();
 	state.deinit();
 };
-
-
-/**
- * Destroy a state.
- *
- * Can be used as a trigger exit function for a `StateManager`.
- */
-export const destroy = (state: State): void => state.destroy();

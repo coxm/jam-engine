@@ -4,7 +4,7 @@ export interface BinaryRelation {
 
 
 export interface NAryRelation {
-	<T>(...args: T[]): boolean;
+	<T>(iterable: Iterable<T>): boolean;
 }
 
 

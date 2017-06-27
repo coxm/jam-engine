@@ -14,12 +14,13 @@ import {ActorDef, PartialActorDef, mergeActorDefs} from './Actor';
  */
 export class Loader extends FileLoader {
 	actorDef(relpath: string): Promise<ActorDef> {
-		return this.json(relpath).then(this.fromPartialDef.bind(this));
+		return this.json<ActorDef>(relpath).then(
+			this.fromPartialDef.bind(this));
 	}
 
 	fromPartialDef(root: PartialActorDef): Promise<ActorDef> {
 		if (!root.depends) {
-			return Promise.resolve(root);
+			return Promise.resolve(root as ActorDef);
 		}
 		return Promise.all(
 			typeof root.depends === 'string'
