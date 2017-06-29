@@ -46,13 +46,11 @@ export function isDown(keyCode: KeyCode | number): boolean {
 
 
 /** The keydown event manager. */
-export const keydown =
-	new EventManager<KeyCode | number | string | symbol, KeyEventData>();
+export const keydown = new EventManager<KeyCode | PropertyKey, KeyEventData>();
 
 
 /** The keyup event manager. */
-export const keyup =
-	new EventManager<KeyCode | number | string | symbol, KeyEventData>();
+export const keyup = new EventManager<KeyCode | PropertyKey, KeyEventData>();
 
 
 /**

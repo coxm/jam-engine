@@ -18,9 +18,7 @@ export function loop(fn: () => void): RenderLoop {
 		frameID = requestAnimationFrame(render);
 	}
 	return {
-		start(): void {
-			render();
-		},
+		start: render,
 		stop(): void {
 			cancelAnimationFrame(frameID);
 			frameID = 0;
