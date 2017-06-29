@@ -253,9 +253,16 @@ export class Manager<State, Trigger> {
 			switch (
 				(<RelationTransition<State, Trigger>> transition).rel
 			) {
-				case Relation.sibling: {
-					const sibs = this.getNode(this.curr.parent!).children;
-					nextID = sibs[sibs.length - 1];
+				case Relation.sibling:
+				case Relation.siblingElseUp: {
+					const siblings = this.getNode(this.curr.parent!).children;
+					nextID = siblings[siblings.length - 1];
+					if (nextID === undefined && (
+						(transition as RelationTransition<State, Trigger>).rel
+							=== Relation.siblingElseUp
+					)) {
+						nextID = this.curr.parent!;
+					}
 					break;
 				}
 				case Relation.parent:
