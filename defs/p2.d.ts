@@ -602,13 +602,13 @@ declare namespace p2 {
         addShape(shape: Shape, offset: number[], angle: number): void;
         removeShape(shape: Shape): boolean;
         updateMassProperties(): void;
-        applyForce(force: number[], worldPoint?: number[]): void;
-        applyForceLocal(force: number[], localPoint?: number[]): void;
+        applyForce(force: AnyVec2, worldPoint?: AnyVec2): void;
+        applyForceLocal(force: AnyVec2, localPoint?: number[]): void;
         applyImpulse(impulse: number[], relativePoint?: number[]): void;
         applyImpulseLocal(impulse: number[], relativePoint?: number[]): void;
         toLocalFrame(out: number[], worldPoint: number[]): void;
         toWorldFrame(out: number[], localPoint: number[]): void;
-        fromPolygon(path: number[][], options?: {
+        fromPolygon(path: AnyVec2[], options?: {
             optimalDecomp?: boolean;
             skipSimpleCheck?: boolean;
             removeCollinearPoints?: any; //boolean | number
