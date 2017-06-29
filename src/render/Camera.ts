@@ -32,6 +32,26 @@ export class Camera {
 	/** Set the height of this camera. */
 	set height(value: number) { this.hh = 0.5 * value; }
 
+	/** Get the x-coordinate of the left edge of this camera. */
+	get xmin(): number {
+		return this.stage.position.x - (1 + this.stage.scale.x) * this.hw;
+	}
+	/** Get the x-coordinate of the right edge of this camera. */
+	get xmax(): number {
+		return this.stage.position.x + (1 - this.stage.scale.x) * this.hw;
+	}
+	/** Get the y-coordinate of the bottom edge of this camera. */
+	get ymin(): number {
+		return this.stage.position.y - (1 + this.stage.scale.y) * this.hh;
+	}
+	/** Get the y-coordinate of the top edge of this camera. */
+	get ymax(): number {
+		return this.stage.position.y + (1 - this.stage.scale.y) * this.hh;
+	}
+
+	set x(v: number) { this.stage.position.x = this.hw - this.stage.scale.x * v; }
+	set y(v: number) { this.stage.position.y = this.hh - this.stage.scale.y * v; }
+
 	/** Move the camera to a new position. */
 	moveTo(x: number, y: number): void {
 		this.stage.position.x = this.hw - this.stage.scale.x * x;
@@ -47,5 +67,20 @@ export class Camera {
 	/** Set the camera's scale. */
 	setScale(x: number, y: number): void {
 		this.stage.scale.set(x, y);
+	}
+
+	/**
+	 * Check if a point or singe coordinate is in range.
+	 *
+	 * @example
+	 * camera.inRange(100, 100);
+	 * camera.inRange(100);
+	 * camera.inRange(undefined, 100);
+	 */
+	inRange(x?: number, y?: number): boolean {
+		return !(
+			x! < this.xmin || this.xmax < x! ||
+			y! < this.ymin || this.ymax < y!
+		);
 	}
 }
