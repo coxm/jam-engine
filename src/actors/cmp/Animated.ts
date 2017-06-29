@@ -4,7 +4,6 @@ import {ComponentBase, ComponentDef} from '../Actor';
 
 
 export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
-	readonly factory: 'anim';
 	/** The initial animation to show. */
 	readonly initial?: string | number;
 	/** Optionally prevent the animation from playing on construction. */
