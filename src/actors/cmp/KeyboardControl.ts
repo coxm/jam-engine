@@ -36,7 +36,7 @@ export abstract class KeyboardControl extends ComponentBase {
 		return driver;
 	}
 
-	getKeyDownHandlers(driver: Driver): [KeyAction, () => void][] {
+	getKeyDownHandlers(driver: Driver): [any, () => void][] {
 		return [
 			[KeyAction.up, driver.up.bind(driver)],
 			[KeyAction.down, driver.down.bind(driver)],
@@ -45,7 +45,7 @@ export abstract class KeyboardControl extends ComponentBase {
 		];
 	}
 
-	getKeyUpHandlers(driver: Driver): [KeyAction, () => void][] {
+	getKeyUpHandlers(driver: Driver): [any, () => void][] {
 		return [
 			[KeyAction.up, driver.stopUp.bind(driver)],
 			[KeyAction.down, driver.stopDown.bind(driver)],
