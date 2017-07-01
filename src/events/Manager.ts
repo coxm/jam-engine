@@ -68,6 +68,102 @@ interface BatchedHandlerInfo extends HandlerInfo {
 type CategoryHandlers = Map<string, HandlerInfo>;
 
 
+/**
+ * Events manager.
+ *
+ * @tparam Category a type indicating the available event categories. Strings
+ * allow more flexibility, but enums or symbols can also be used.
+ * @tparam Data a type indicating what kind of data is stored on events.
+ *
+ * An object which deals with game events. Typically a single `Manager`
+ * instance will suffice, but multiple instances can be constructed as well.
+ * Each `Manager` has multiple event streams to which listeners can be added
+ * (and subsequently removed). The `Manager` also supports batches of
+ * listeners, which can be added/removed in a single operation.
+ *
+ * The {@link Manager} class can set event handlers using the
+ * {@link Manager#on} and {@link Manager#once} methods. Optionally a context
+ * can be passed to both methods, and a numeric limit can be passed to
+ * {@link Manager#on}.
+ *
+ * @example <caption>Simple event handlers</caption>
+ * const manager = new Manager<string, any>();
+ * manager
+ *     .on('SomeEvent', (event): void => {
+ *         console.log('This will be called every time SomeEvent happens');
+ *     })
+ *     .once('SomeEvent', (event): void => {
+ *         console.log('This will be called at most once');
+ *     })
+ *     .on('SomeEvent', function(event): void {
+ *         console.log(this.whatami, 'observed SomeEvent');
+ *     }, {whatami: 'The context'})
+ *     .on('SomeEvent', (event): void => {
+ *         console.log('This will be called at most 5 times');
+ *     }, null, 5);
+ *
+ * Any handler set using {@link Manager#on} or {@link Manager#once} can also be
+ * cancelled using the {@link Manager#off} method. When a context is used by a
+ * handler, that same context is required for removal.
+ *
+ * @example <caption>Cancelling event handlers</caption>
+ * const manager = new Manager<string, any>();
+ * const context = {whatami: 'The context'};
+ * function handler(ev: Event): void {
+ *     // Do something...
+ * }
+ * manager
+ *     .on('SomeEvent', handler)
+ *     .on('AnotherEvent', handler, context);
+ * // To cancel:
+ * manager
+ *     .off('SomeEvent', handler)
+ *     .off('AnotherEvent', handler, context);
+ *
+ * Event handlers can be grouped together in "batches" using the
+ * {@link Manager#batch} method. This is especially convenient for specifying
+ * lots of complex behaviour which must also be removed simultaneously (for
+ * example, clearing all listeners set by a level). Batches are then removed by
+ * calling the {@link Manager#unbatch} method with the batch ID.
+ *
+ * @example <caption>Batching event handlers</caption>
+ * const manager = new Manager<string, any>();
+ * const context = {whatami: 'The context'};
+ * function handler(this: {whatami: string;}, event): void {
+ *     let message = ${event.type} + ' happened';
+ *     if (this.whatami) {
+ *         message += ' as observed by ' + this.whatami;
+ *     );
+ *     console.log(message);
+ * }
+ * // Initialise the batch, e.g. when starting a level:
+ * const batchID = manager.batch([
+ *     ['SomeEvent', handler],
+ *     // ...
+ * ], {ctx: context});
+ * // Remove the entire batch, e.g. when ending a level:
+ * manager.unbatch(batchID);
+ *
+ * For convenience, the batch ID can be specified on construction. Calling
+ * {@link Manager#batch} with an ID will add handlers to the batch if it
+ * exists, or create a new one if not.
+ *
+ * @example <caption>Extending batches</caption>
+ * const manager = new Manager<string, any>();
+ * const batchID = Symbol('MyHandlerBatch');
+ * const handler = (event) => { console.log(event.type, 'happened!'); };
+ * manager.batch([
+ *     ['SomeEvent', handler],
+ *     // ...
+ * ], {id: batchID});
+ * // Add an 'AnotherEvent' handler to the same batch.
+ * manager.batch([
+ *     ['AnotherEvent', handler],
+ *     // ...
+ * ], {id: batchID});
+ * // Remove all batched handlers.
+ * manager.unbatch(batchID);
+ */
 export class Manager<Category, Data> {
 	/**
 	 * The event handlers, in a Category -> CategoryHandlers map.
