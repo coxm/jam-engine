@@ -1,9 +1,19 @@
+/**
+ * @file src/actors/Actor.ts
+ *
+ * Here the core parts of Jam's entity-component system are defined.
+ * @see {@link src/actors/Factory.ts} also.
+ */
+
+
+/** The base interface for a component definition. */
 export interface ComponentDef {
 	/** The ID of the factory to use for this component definition. */
 	readonly factory: string;
 }
 
 
+/** The base interface for a component object. */
 export interface Component {
 	/**
 	 * The key under which this component is stored in an Actor.
@@ -38,18 +48,7 @@ export class ComponentBase {
 }
 
 
-export interface PartialActorDef {
-	/** An optional alias for this actor, e.g. `'player'`. */
-	alias?: string;
-	/** An optional list of schemata to base the actor on. */
-	depends?: string[] | string;
-	/** A list of components comprising the actor. */
-	cmp?: ComponentDef[];
-	/** The actor's position. */
-	position?: AnyVec2;
-}
-
-
+/** Interface for actor definitions. */
 export interface ActorDef {
 	/** An optional alias for this actor, e.g. `'player'`. */
 	alias?: string;
@@ -60,6 +59,9 @@ export interface ActorDef {
 	/** The actor's position. */
 	position: AnyVec2;
 }
+
+
+export type PartialActorDef = Partial<ActorDef>;
 
 
 /**
@@ -141,6 +143,11 @@ export function mergeActorDefs(
 }
 
 
+/**
+ * Component container class.
+ *
+ * The 'entity' class in the ECS.
+ */
 export class Actor {
 	readonly cmp: { [key: string]: Component; } = {};
 	readonly alias: string|undefined;

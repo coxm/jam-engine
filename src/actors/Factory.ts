@@ -11,12 +11,17 @@ export interface ComponentFactory {
 }
 
 
+/**
+ * The ECS factory class.
+ *
+ * @see {@link docs/examples/actors.ts} for examples.
+ */
 export class Factory<ActorType> {
 	/**
 	 * Function used to create ActorType instances.
 	 *
 	 * The default creates {@link Actor} instances. Can be overwritten to
-	 * provide custom actor types.
+	 * provide custom actor types, or add event hooks.
 	 */
 	create: (
 		actorID: symbol,
