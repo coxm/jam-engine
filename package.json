@@ -1,6 +1,6 @@
 {
   "name": "jam",
-  "version": "14.0.1",
+  "version": "15.0.0",
   "description": "Game jam engine",
   "repository": "git+ssh://git@bitbucket.org:mcox136/jam-engine.git",
   "main": "build/index.js",
