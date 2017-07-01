@@ -36,6 +36,11 @@ export type Transition<S, T> = (
 );
 
 
+/**
+ * Options to use when adding a state to a {@link Manager}.
+ *
+ * @see {@link Manager#add}.
+ */
 export interface AddOptions<State, Trigger> {
 	readonly alias?: string | symbol;
 	readonly children?: (Alias | State)[];
@@ -62,8 +67,15 @@ interface Node<State, Trigger> {
 let idCounter: number = -1;
 
 
+/**
+ * State managing class.
+ *
+ * @see {@tutorial docs/examples/states.ts} for a full example.
+ */
 export class Manager<State, Trigger> {
+	/** A callback called before each state transition. */
 	preTrigger: (ev: TriggerEvent<State, Trigger>) => void = noop;
+	/** A callback called after each state transition. */
 	postTrigger: (ev: TriggerEvent<State, Trigger>) => void = noop;
 
 	private nodes = new Map<Alias, Node<State, Trigger>>();
@@ -78,6 +90,13 @@ export class Manager<State, Trigger> {
 		this.postTrigger = (options && options.postTrigger) || noop;
 	}
 
+	/**
+	 * Set the initial state.
+	 *
+	 * Can only be called once.
+	 *
+	 * @throws {Error} on subsequent calls.
+	 */
 	set(key: Alias): void {
 		if (this.curr) {
 			throw new Error("Already initialised");
@@ -85,30 +104,57 @@ export class Manager<State, Trigger> {
 		this.curr = this.getNode(key);
 	}
 
+	/** Get the current state. */
 	get current(): State {
 		return this.curr.state;
 	}
 
+	/** Get the ID of the current state. */
 	get currentID(): number {
 		return this.curr.id;
 	}
 
+	/**
+	 * Get the ID of a state, given its alias or ID.
+	 *
+	 * @returns the state's ID.
+	 * @throws {Error} if the requested state doesn't exist.
+	 */
 	id(key: Alias): number {
 		return this.getNode(key).id;
 	}
 
+	/**
+	 * Get a state, given its alias or ID.
+	 *
+	 * @returns the state object.
+	 * @throws {Error} if the requested state doesn't exist.
+	 */
 	at(key: Alias): State {
 		return this.getNode(key).state;
 	}
 
+	/** Check if an alias points to a state. */
 	has(key: Alias): boolean {
 		return this.nodes.has(key);
 	}
 
+	/**
+	 * Check if a state has any children.
+	 *
+	 * @throws {Error} if the referred-to state doesn't exist.
+	 */
 	hasChildren(key: Alias): boolean {
 		return this.getNode(key).children.length !== 0;
 	}
 
+	/**
+	 * Check if a state object is unique.
+	 *
+	 * State IDs and aliases will always be unique, but the actual state object
+	 * can appear multiple times, to prevent unnecessary duplication. This
+	 * method checks whether a state has been added multiple times.
+	 */
 	isUnique(state: State): boolean {
 		let found = false;
 		for (let i = 0, len = this.list.length; i < len; ++i) {
@@ -122,6 +168,12 @@ export class Manager<State, Trigger> {
 		return found;
 	}
 
+	/**
+	 * Count the number of times a state appears in the tree.
+	 *
+	 * State IDs and aliases will always be unique, but the actual state object
+	 * can appear multiple times, to prevent unnecessary duplication.
+	 */
 	count(state: State): number {
 		let num = 0;
 		for (let i = 0, len = this.list.length; i < len; ++i) {
@@ -132,24 +184,49 @@ export class Manager<State, Trigger> {
 		return num;
 	}
 
+	/**
+	 * Get an iterable of state IDs.
+	 *
+	 * States which have been included multiple times will appear as many times
+	 * in the iterable.
+	 */
 	*keys(): IterableIterator<number> {
 		for (let node of this.list) {
 			yield node.id;
 		}
 	}
 
+	/**
+	 * Get an iterable of states in the tree.
+	 *
+	 * States which have been included multiple times will appear as many times
+	 * in the iterable.
+	 */
 	*values(): IterableIterator<State> {
 		for (let node of this.list) {
 			yield node.state;
 		}
 	}
 
+	/**
+	 * Get an `[ID, state]` pair iterator.
+	 *
+	 * States which have been included multiple times will appear as many times
+	 * in the iterable.
+	 */
 	*entries(): IterableIterator<[number, State]> {
 		for (let node of this.list) {
 			yield [node.id, node.state];
 		}
 	}
 
+	/**
+	 * Get an iterable of children for a state.
+	 *
+	 * @param key the ID or alias of a state in the tree.
+	 * @returns an iterable of the referred-to state's children, or if no key
+	 * is provided, the children of the current state.
+	 */
 	*children(key?: Alias): IterableIterator<[Alias, State]> {
 		const parent = key === undefined ? this.curr : this.getNode(key);
 		for (let id of parent.children) {
@@ -157,6 +234,13 @@ export class Manager<State, Trigger> {
 		}
 	}
 
+	/**
+	 * Get an iterable of siblings for a state.
+	 *
+	 * @param key the ID or alias of a state in the tree.
+	 * @returns an iterable of the referred-to state's siblings, or if no key
+	 * is provided, the siblings of the current state.
+	 */
 	*siblings(key?: Alias): IterableIterator<[Alias, State]> {
 		const parent = key === undefined ? this.curr : this.getParent(key);
 		for (let id of parent.children) {
@@ -164,6 +248,14 @@ export class Manager<State, Trigger> {
 		}
 	}
 
+	/**
+	 * Get an iterable of ancestors for a state.
+	 *
+	 * @param key the ID or alias of a state in the tree.
+	 * @param strict whether to exclude the state as an ancestor of itself.
+	 * @returns an iterable of the referred-to state's ancestors, or if no key
+	 * is provided, the ancestors of the current state.
+	 */
 	*ancestors(key?: Alias, strict: boolean = false)
 		: IterableIterator<[Alias, State]>
 	{
@@ -177,12 +269,30 @@ export class Manager<State, Trigger> {
 		}
 	}
 
+	/**
+	 * Attempt to get the parent of a state.
+	 *
+	 * @param key the ID or alias of a state in the tree, or (if not provided)
+	 * of the current state..
+	 * @returns the parent state ID and object, or null if the state has no
+	 * parent.
+	 */
 	tryParent(key?: Alias): [number, State] | null {
 		const node = key === undefined ? this.curr : this.getNode(key);
 		const parent = this.getNode(node.parent!)!;
 		return node ? [parent.id, parent.state] : null;
 	}
 
+	/**
+	 * Add a state to the tree.
+	 *
+	 * @param state the state to add.
+	 * @param options options for adding the state. @see {@link AddOptions}.
+	 * @param options.alias an optional (unique) alias for the new state.
+	 * @param options.children any child states (or their aliases/IDs) to
+	 * append to the new state.
+	 * @param options.transitions any transitions to add to the new state.
+	 */
 	add(state: State, options?: AddOptions<State, Trigger>): number {
 		const node = this.createNode(state);
 		if (options && options.hasOwnProperty('alias')) {
@@ -199,11 +309,26 @@ export class Manager<State, Trigger> {
 		return node.id;
 	}
 
+	/**
+	 * Add transitions to a state.
+	 *
+	 * @param key the state's ID or alias.
+	 * @param list an array of state transitions.
+	 */
 	addTransitions(key: Alias, list: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
 		node.transitions = node.transitions.concat(list);
 	}
 
+	/**
+	 * Append a child to a state.
+	 *
+	 * @param parentKey the ID or alias of the parent state.
+	 * @param child the ID or alias of an existing state, or a new state to
+	 * append.
+	 * @returns the ID of the child state.
+	 * @throws {Error} if the parent or any child state does not exist.
+	 */
 	appendChild(parentKey: Alias, child: Alias | State): number {
 		const parent = this.getNode(parentKey);
 		const childNode = this.getOrCreateNode(child);
@@ -212,6 +337,15 @@ export class Manager<State, Trigger> {
 		return childNode.id;
 	}
 
+	/**
+	 * Append multiple children to a state.
+	 *
+	 * @param parentKey the ID or alias of the parent state.
+	 * @param children IDs or aliases of existing states, or new state objects,
+	 * to append to the parent.
+	 * @returns the IDs of newly appended children.
+	 * @throws {Error} if the parent or any child state does not exist.
+	 */
 	appendChildren(parentKey: Alias, children: (Alias | State)[]): number[] {
 		const parent = this.getNode(parentKey);
 		return children.map(child => {
@@ -222,10 +356,23 @@ export class Manager<State, Trigger> {
 		});
 	}
 
+	/**
+	 * Add a transition for a particular state.
+	 *
+	 * @param key the ID or alias of an existing state.
+	 * @throws {Error} if the referred-to state doesn't exist.
+	 */
 	on(key: Alias, transition: Transition<State, Trigger>): void {
 		this.getNode(key).transitions.push(transition);
 	}
 
+	/**
+	 * Add multiple transitions for a particular state.
+	 *
+	 * @param key the ID or alias of an existing state.
+	 * @param transitions an array of transitions to add.
+	 * @throws {Error} if the referred-to state doesn't exist.
+	 */
 	onMany(key: Alias, transitions: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
 		node.transitions = node.transitions.concat(transitions);
@@ -236,11 +383,18 @@ export class Manager<State, Trigger> {
 	 *
 	 * @param key an alias or ID for the new state.
 	 * @param exit an exit strategy for leaving the current state.
+	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
 	jump(key: Alias, exit: (state: State, trigger: null) => void): void {
 		this._jump(key, null, exit);
 	}
 
+	/**
+	 * Fire a trigger on the current state.
+	 *
+	 * @param trigger the type of trigger to fire.
+	 * @throws {Error} if the current state doesn't have the specified trigger.
+	 */
 	trigger(trigger: Trigger): void {
 		const transition = this.curr.transitions.find(
 			tr => tr.trigger === trigger
@@ -279,6 +433,9 @@ export class Manager<State, Trigger> {
 		this._jump(nextID, trigger, transition.exit);
 	}
 
+	/**
+	 * Callback used when a trigger is fired for a state which doesn't have it.
+	 */
 	protected onEmptyTransition(trigger: Trigger): void {
 		throw new Error("No transition for trigger: " + trigger);
 	}
