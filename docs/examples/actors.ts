@@ -10,6 +10,7 @@ import {
 	Component,
 	ComponentDef,
 	PartialActorDef,
+	mergeActorDefs,
 } from 'jam/actors/Actor';
 import {Loader} from 'jam/actors/Loader';
 
