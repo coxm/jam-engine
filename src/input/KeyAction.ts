@@ -12,4 +12,5 @@ export const enum KeyAction {
 	strafe = 48,
 
 	use = 64,
+	fire = 128,
 }
