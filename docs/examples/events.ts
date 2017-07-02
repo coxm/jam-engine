@@ -23,7 +23,7 @@ export const manager = new Manager<Category, any>();
 
 /** A simple event handler. */
 function handler(this: {whatami: string;}, event: Event<Category, any>): void {
-	let message: string = event.type + ' happened';
+	let message: string = event.category + ' happened';
 	if (this && this.whatami) {
 		message += ' and was observed by ' + this.whatami;
 	}
