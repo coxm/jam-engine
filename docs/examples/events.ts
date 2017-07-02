@@ -6,13 +6,19 @@
 import {Manager, Event} from 'jam/events/Manager';
 
 
+/**
+ * The different types of event which can be used.
+ *
+ * Alternatively enums, symbols, numbers or arbitrary strings can be used.
+ */
 export type Category = (
 	'SomeEvent' |
 	'AntherEvent'
 );
 
 
-const manager = new Manager<Category, any>();
+/** The event manager. */
+export const manager = new Manager<Category, any>();
 
 
 /** A simple event handler. */
