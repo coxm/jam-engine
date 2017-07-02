@@ -127,12 +127,12 @@ const hasLaserGun: PartialActorDef = {
 };
 
 /** A bad guy, with health and a revolver. */
-const badGuy = factory.create(mergeActorDefs(hasHealth, hasRevolver, {
+const badGuy1 = factory.create(mergeActorDefs(hasHealth, hasRevolver, {
 	alias: 'BadGuy1',
 	position: [100, 0],
 }));
 /** Another bad guy, with health and a laser gun. */
-const goodGuy = factory.create(mergeActorDefs(hasHealth, hasLaserGun, {
+const badGuy2 = factory.create(mergeActorDefs(hasHealth, hasLaserGun, {
 	alias: 'BadGuy2',
 	position: [100, 0],
 }));
@@ -145,21 +145,41 @@ export const loader = new Loader({
 	baseUrl: 'my-game-assets/actors',
 });
 
-// Load the 'BadGuy1' definition.
-loader.actorDef('BadGuy1').then(def => factory.create(def));
+// File `my-game-assets/actors/HasHealth.json`:
+{
+	"cmp": [{
+		"factory": "health",
+		"maxHealth": 100,
+		"initialHealth": 50
+	}]
+}
 
-// Load and merge several partial definitions (complicated method).
-Promise.all([
-	loader.json<ActorDef>('HasHealth'),
-	loader.json<ActorDef>('HasRevolver')
-]).then((defs: PartialActorDef[]): void => {
-	factory.create(mergeActorDefs(defs));
-});
+// File `my-game-assets/actors/HasRevolver.json`:
+{
+	"cmp": [{
+		"factory": "weapon",
+		"damage": 20,
+		"image": "Bullet.png"
+	}]
+}
 
-// Load and merge several partial definitions (simple method).
-const badGuySchema = {
-	depends: ['HasHealth', 'HasRevolver'],
-};
+// File `my-game-assets/actors/BadGuy1.json`:
+{
+	"alias": "BadGuy1",
+	"position": [100, 0],
+	"depends": ["HasHealth", "HasRevolver"]
+}
+
+// In code:
 loader
-	.actorDef(badGuySchema)
+	.actorDef('BadGuy1')  // Loads the above files and merges them together.
+	.then(def => factory.create(def));
+
+// Alternatively:
+loader
+	.fromPartialDef({  // Allows specifying of a partial definition in code.
+		"alias": "BadGuy1",
+		"position": [100, 0],
+		"depends": ["HasHealth", "HasRevolver"]
+	})
 	.then(def => factory.create(def));
