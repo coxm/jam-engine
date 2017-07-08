@@ -1,4 +1,5 @@
 import {pair} from 'jam/util/pairing';
+import {cancellable, CancellableIterator} from 'jam/util/iterate';
 
 
 export type P2ContactEvent = (
@@ -33,34 +34,62 @@ export interface ContactManagerOptions {
 }
 
 
+type EventIterator = CancellableIterator<[string | number, P2ContactEvent]>;
+
+
 export class ContactManager {
 	private begin = new Map<string | number, P2ContactEvent>();
 	private end = new Map<string | number, P2ContactEvent>();
 	private known = new Map<string | number, P2ContactEvent>();
 
+	private beginIter: EventIterator | null = null;
+	private endIter: EventIterator | null = null;
+
+	private world: p2.World | null = null;
+
 	constructor(public readonly options: ContactManagerOptions) {
 	}
 
+	get isInstalled(): boolean {
+		return !!this.world;
+	}
+
 	install(world: p2.World): void {
+		if (this.world) {
+			throw new Error(
+				"ContactManager can only be installed to one world at a time");
+		}
+		this.world = world;
 		const handlers = this.handlers();
 		for (let key in handlers) {
 			world.on(key, handlers[key], this);
 		}
 	}
 
-	uninstall(world: p2.World): void {
-		const handlers = this.handlers();
-		for (let key in handlers) {
-			world.off(key, handlers[key]);
+	uninstall(): void {
+		if (this.beginIter) {
+			this.beginIter.cancel();
 		}
+		if (this.endIter) {
+			this.endIter.cancel();
+		}
+		if (this.world) {
+			const handlers = this.handlers();
+			for (let key in handlers) {
+				this.world.off(key, handlers[key]);
+			}
+		}
+		this.world = null;
 	}
 
 	onPostStep(): void {
-		for (let [key, ev] of this.begin.entries()) {
+		const iBegin = this.beginIter = cancellable(this.begin.entries());
+		const iEnd = this.endIter = cancellable(this.end.entries());
+		for (let [key, ev] of iBegin) {
 			this.fireEvent(ev);
 			this.known.set(key, ev);
 		}
-		for (let [key, ev] of this.end.entries()) {
+		for (let [key, ev] of iEnd) {
 			this.fireEvent(ev);
 			this.known.delete(key);
 		}
