@@ -16,3 +16,26 @@ export function* asIterable<T>(arg: T | Iterable<T>): Iterable<T> {
 		yield arg as T;
 	}
 }
+
+
+export interface CancellableIterator<T> extends IterableIterator<T> {
+	readonly cancelled: boolean;
+	cancel(): void;
+}
+
+
+export function cancellable<T>(iterable: Iterable<T>): CancellableIterator<T> {
+	let cancelled = false;
+	function* iterator(): IterableIterator<T> {
+		for (let t of iterable) {
+			if (cancelled) {
+				break;
+			}
+			yield t;
+		}
+	}
+	const iter = iterator() as CancellableIterator<T>;
+	iter.cancel = (): void => { cancelled = true; };
+	(iter as any).cancelled = true;
+	return iter;
+}
