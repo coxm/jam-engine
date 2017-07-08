@@ -2,7 +2,10 @@
   "name": "jam",
   "version": "15.0.0",
   "description": "Game jam engine",
-  "repository": "git+ssh://git@bitbucket.org:mcox136/jam-engine.git",
+  "repository": {
+    "type": "git",
+    "url": "github:coxm/jam-engine"
+  },
   "main": "build/index.js",
   "scripts": {
     "build": "make",
@@ -27,6 +30,7 @@
     "typings": "1.3.2"
   },
   "dependencies": {
+    "p2": "^0.7.1",
     "pixi.js": "4.3.4",
     "systemjs": "^0.19.41"
   }

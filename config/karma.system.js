@@ -4,7 +4,7 @@ window.__karma__.loaded = false;
 window.__karma__.startJasmine = window.__karma__.start;
 window.__karma__.start = function() {
 	const TEST_REGEXP = /^\/base\/(build\/test\/.*)\.js$/;
-	const globalModules = [];
+	const globalModules = ['node_modules/p2/build/p2'];
 	const testModules = Object.keys(this.files).filter(
 		TEST_REGEXP.test.bind(TEST_REGEXP)
 	);
