@@ -20,11 +20,8 @@ export interface Driver {
 export abstract class KeyboardControl extends ComponentBase {
 	key: string;
 
-	/** The ID for the keydown events batch. */
-	private keydownID: symbol;
-
-	/** The ID for the keyup events batch. */
-	private keyupID: symbol;
+	/** The event batching ID. */
+	private readonly eventsID: symbol = Symbol('KeyboardControl');
 
 	abstract getDriver(actor: Actor): Driver;
 
@@ -60,18 +57,22 @@ export abstract class KeyboardControl extends ComponentBase {
 			throw new Error("Key input requires a driver");
 		}
 
-		this.keydownID = keydown.batch(
-			this.getKeyDownHandlers(driver),
-			{context: this.getKeyDownContext(driver)}
-		);
-		this.keyupID = keyup.batch(
-			this.getKeyUpHandlers(driver),
-			{context: this.getKeyUpContext(driver)}
-		);
+		if (!keydown.hasBatch(this.eventsID)) {
+			keydown.batch(this.getKeyDownHandlers(driver), {
+				context: this.getKeyDownContext(driver),
+				id: this.eventsID,
+			});
+		}
+		if (!keyup.hasBatch(this.eventsID)) {
+			keyup.batch(this.getKeyUpHandlers(driver), {
+				context: this.getKeyUpContext(driver),
+				id: this.eventsID,
+			});
+		}
 	}
 
 	onRemove(actor: Actor): void {
-		keydown.unbatch(this.keydownID);
-		keyup.unbatch(this.keyupID);
+		keydown.unbatch(this.eventsID);
+		keyup.unbatch(this.eventsID);
 	}
 }
