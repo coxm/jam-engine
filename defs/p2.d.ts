@@ -782,13 +782,13 @@ declare namespace p2 {
 
         readonly type: number;
         readonly id: number;
-        readonly position: number[];
-        readonly angle: number;
+        position: number[];
+        angle: number;
         readonly boundingRadius: number;
-        readonly collisionGroup: number;
+        collisionGroup: number;
         readonly collisionResponse: boolean;
-        readonly collisionMask: number;
-        readonly material: Material;
+        collisionMask: number;
+        material: Material;
         readonly area: number;
         readonly sensor: boolean;
         readonly body: Body;
