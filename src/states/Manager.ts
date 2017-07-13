@@ -191,7 +191,7 @@ export class Manager<State, Trigger> {
 	 * in the iterable.
 	 */
 	*keys(): IterableIterator<number> {
-		for (let node of this.list) {
+		for (const node of this.list) {
 			yield node.id;
 		}
 	}
@@ -203,7 +203,7 @@ export class Manager<State, Trigger> {
 	 * in the iterable.
 	 */
 	*values(): IterableIterator<State> {
-		for (let node of this.list) {
+		for (const node of this.list) {
 			yield node.state;
 		}
 	}
@@ -215,7 +215,7 @@ export class Manager<State, Trigger> {
 	 * in the iterable.
 	 */
 	*entries(): IterableIterator<[number, State]> {
-		for (let node of this.list) {
+		for (const node of this.list) {
 			yield [node.id, node.state];
 		}
 	}
@@ -229,7 +229,7 @@ export class Manager<State, Trigger> {
 	 */
 	*children(key?: Alias): IterableIterator<[Alias, State]> {
 		const parent = key === undefined ? this.curr : this.getNode(key);
-		for (let id of parent.children) {
+		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
 		}
 	}
@@ -243,7 +243,7 @@ export class Manager<State, Trigger> {
 	 */
 	*siblings(key?: Alias): IterableIterator<[Alias, State]> {
 		const parent = key === undefined ? this.curr : this.getParent(key);
-		for (let id of parent.children) {
+		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
 		}
 	}

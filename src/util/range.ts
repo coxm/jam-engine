@@ -47,12 +47,12 @@ export function* range(range: Range): IterableIterator<number> {
 export function* combine(ranges: Iterable<number|Range>)
 	: IterableIterator<number>
 {
-	for (let item of ranges) {
+	for (const item of ranges) {
 		if (item === +item) {
 			yield item;
 		}
 		else {
-			for (let i of range(<Range> item)) {
+			for (const i of range(<Range> item)) {
 				yield i;
 			}
 		}

@@ -41,7 +41,7 @@ export class Factory<ActorType> {
 
 	/** Set multiple component factories at a time. */
 	setCmpFactories(obj: { [id: string]: ComponentFactory; }): this {
-		for (let id in obj) {
+		for (const id in obj) {
 			this.cmpFactories.set(id, obj[id]);
 		}
 		return this;

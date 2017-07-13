@@ -49,7 +49,7 @@ function fetchTextures(
 		}
 	}
 
-	for (let url of paths) {
+	for (const url of paths) {
 		if (!PIXI.utils.TextureCache[url]) {
 			++numRemaining;
 			PIXI.loader.add({

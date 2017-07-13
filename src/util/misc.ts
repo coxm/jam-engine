@@ -70,7 +70,7 @@ export function collect<T>(array: T[][]): T[] {
 
 export function uniqueKey<T>(x: T): keyof T {
 	let unique: any = undefined;
-	for (let key in x) {
+	for (const key in x) {
 		if (unique !== undefined) {
 			throw new Error("Key not unique");
 		}
@@ -84,7 +84,7 @@ export function uniqueKey<T>(x: T): keyof T {
 
 
 export function anyKey<T>(x: T): keyof T {
-	for (let key in x) {
+	for (const key in x) {
 		return key;
 	}
 	throw new Error("No keys");
@@ -112,7 +112,7 @@ export function dictMap<U, V>(
 )
 	:	Dict<V>
 {
-	for (let key in input) {
+	for (const key in input) {
 		out[key] = func(input[key], key);
 	}
 	return out;
@@ -131,7 +131,7 @@ export function dictMapKV<U, V>(
 )
 	: Dict<V>
 {
-	for (let key in input) {
+	for (const key in input) {
 		const [v, k] = func(input[key], key);
 		out[k] = v;
 	}
@@ -147,7 +147,7 @@ export function dictExclude<U, V>(
 )
 	: Dict<V>
 {
-	for (let key in input) {
+	for (const key in input) {
 		const result = func(input[key], key);
 		if (result !== exclude) {
 			out[key] = result;

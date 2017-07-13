@@ -27,7 +27,7 @@ export interface CancellableIterator<T> extends IterableIterator<T> {
 export function cancellable<T>(iterable: Iterable<T>): CancellableIterator<T> {
 	let cancelled = false;
 	function* iterator(): IterableIterator<T> {
-		for (let t of iterable) {
+		for (const t of iterable) {
 			if (cancelled) {
 				break;
 			}

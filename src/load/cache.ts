@@ -89,7 +89,7 @@ export function cache(store: AnyStoreArg, keyGetter: AnyKeyGetter)
 		desc.value = function cacheWrapper(this: any): any {
 			const key: any = getKey.call(this, arguments);
 			const theStore = getStore.call(this, target, propKey, desc);
-			for (let [k, v] of theStore.entries()) {
+			for (const [k, v] of theStore.entries()) {
 				if (k === key) {
 					return v;
 				}

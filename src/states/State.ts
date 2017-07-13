@@ -378,7 +378,7 @@ export function state<Context>(
 {
 	const state = new State(name);
 	if (methods) {
-		for (let key in <any> methods) {
+		for (const key in <any> methods) {
 			(<any> state)[key] = (<any> methods)[key];
 		}
 	}
@@ -401,7 +401,7 @@ export function wrap<Wrapped>(
 {
 	const state = new State(name);
 	if (methods) {
-		for (let key in <any> methods) {
+		for (const key in <any> methods) {
 			(<any> state)[key] = wrapProto[key] || (
 				wrapProto[key] = function(this: any): any {
 					return this.context[key].apply(this.context, arguments);

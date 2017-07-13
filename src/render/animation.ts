@@ -101,7 +101,7 @@ export function* frames(
 		:	range(<Range> ranges)
 	);
 
-	for (let index of iter) {
+	for (const index of iter) {
 		const xStart: number = frameWidth * index;
 		yield new PIXI.Rectangle(
 			xStart % imageWidth,

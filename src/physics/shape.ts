@@ -29,7 +29,7 @@ export const convert: {
 	CAPSULE: {type: ShapeType.capsule, cls: p2.Capsule},
 	HEIGHTFIELD: {type: ShapeType.heightfield, cls: p2.Heightfield},
 }
-for (let key in convert) {
+for (const key in convert) {
 	convert[key.toLowerCase()] = convert[(p2.Shape as any)[key]] =
 		convert[key];
 }

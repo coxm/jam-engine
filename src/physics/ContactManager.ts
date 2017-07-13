@@ -61,7 +61,7 @@ export class ContactManager {
 		}
 		this.world = world;
 		const handlers = this.handlers();
-		for (let key in handlers) {
+		for (const key in handlers) {
 			world.on(key, handlers[key], this);
 		}
 	}
@@ -75,7 +75,7 @@ export class ContactManager {
 		}
 		if (this.world) {
 			const handlers = this.handlers();
-			for (let key in handlers) {
+			for (const key in handlers) {
 				this.world.off(key, handlers[key]);
 			}
 		}
@@ -85,11 +85,11 @@ export class ContactManager {
 	onPostStep(): void {
 		const iBegin = this.beginIter = cancellable(this.begin.entries());
 		const iEnd = this.endIter = cancellable(this.end.entries());
-		for (let [key, ev] of iBegin) {
+		for (const [key, ev] of iBegin) {
 			this.fireEvent(ev);
 			this.known.set(key, ev);
 		}
-		for (let [key, ev] of iEnd) {
+		for (const [key, ev] of iEnd) {
 			this.fireEvent(ev);
 			this.known.delete(key);
 		}

@@ -64,7 +64,7 @@ export const create = (
 		type: bodyType,
 	}));
 	if (def.shapes) {
-		for (let shapeDef of def.shapes) {
+		for (const shapeDef of def.shapes) {
 			const shape = createShape(
 				shapeDef, collisionGroups, collisionMasks);
 			body.addShape(shape, shape.position || [0, 0], shape.angle || 0);

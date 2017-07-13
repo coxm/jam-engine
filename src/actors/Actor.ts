@@ -119,7 +119,7 @@ export function mergeActorDefs(
 	let cmp: ComponentDef[] = [];
 	let depends: string[] = [];
 
-	for (let def of defs) {
+	for (const def of defs) {
 		if (!alias && def.alias) {
 			alias = def.alias;
 		}
@@ -219,7 +219,7 @@ export class Actor {
 	 * re-initialised.
 	 */
 	init(): void {
-		for (let key in this.cmp) {
+		for (const key in this.cmp) {
 			if (!this.initialised[key]) {
 				this.cmp[key].onAdd(this);
 				this.initialised[key] = true;
@@ -229,7 +229,7 @@ export class Actor {
 
 	/** Un-initialise all components by calling their `onRemove` methods. */
 	deinit(): void {
-		for (let key in this.cmp) {
+		for (const key in this.cmp) {
 			if (this.initialised[key]) {
 				this.cmp[key].onRemove(this);
 				this.initialised[key] = false;

@@ -212,7 +212,7 @@ export interface SwitchContext<Category, EventData>
 
 
 const someof = (args: Iterable<boolean>): boolean => {
-	for (let arg of args) {
+	for (const arg of args) {
 		if (arg) {
 			return true;
 		}
@@ -222,7 +222,7 @@ const someof = (args: Iterable<boolean>): boolean => {
 
 
 const allof = (args: Iterable<boolean>): boolean => {
-	for (let arg of args) {
+	for (const arg of args) {
 		if (!arg) {
 			return false;
 		}
@@ -454,7 +454,7 @@ function switchTrigger<Category, EventData>(
 )
 	:	void
 {
-	for (let c of this.cases) {
+	for (const c of this.cases) {
 		if (c[0](ev)) {
 			c[1](ev);
 			return;
@@ -503,7 +503,7 @@ function* argumentIterator<EventOb>(
 )
 	:	Iterable<boolean>
 {
-	for (let arg of args) {
+	for (const arg of args) {
 		yield arg(ev);
 	}
 }

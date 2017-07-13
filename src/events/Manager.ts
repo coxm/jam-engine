@@ -272,7 +272,7 @@ export class Manager<Category, Data> {
 			batched = [];
 			this.batches.set(batchID, batched);
 		}
-		for (let item of items) {
+		for (const item of items) {
 			const options = (
 				<[Category, Handler<Category, Data>, HandlerOptions]> item
 			)[2];
@@ -296,7 +296,7 @@ export class Manager<Category, Data> {
 	unbatch(id: symbol): this {
 		const batched: HandlerInfo[] | undefined = this.batches.get(id);
 		if (batched !== undefined) {
-			for (let info of batched) {
+			for (const info of batched) {
 				this.off(info.cat, info.fn, info.ctx);
 			}
 			this.batches.delete(id);
