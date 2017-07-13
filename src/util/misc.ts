@@ -96,6 +96,11 @@ export function forceArray<T>(x: T | T[]): T[] {
 }
 
 
+export const sleep = (milliseconds: number) => new Promise<void>(
+	resolve => setTimeout(resolve, milliseconds)
+);
+
+
 export interface Dict<V> {
 	[key: number]: V;
 	[key: string]: V;
