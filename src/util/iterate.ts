@@ -24,6 +24,13 @@ export interface CancellableIterator<T> extends IterableIterator<T> {
 }
 
 
+export function* reversed<T>(array: T[]): IterableIterator<T> {
+	for (let i = array.length - 1; i >= 0; --i) {
+		yield array[i];
+	}
+}
+
+
 export function cancellable<T>(iterable: Iterable<T>): CancellableIterator<T> {
 	let cancelled = false;
 	function* iterator(): IterableIterator<T> {
