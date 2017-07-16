@@ -1,20 +1,29 @@
-/**
- * Provide an iterable for a value or collection.
- *
- * If given an iterable object, `yield*`s the argument; otherwise, returns an
- * iterator which yields only the argument.
- *
- * @example
- * expect([...asIterable(5)]).toEqual([5]);
- * expect([...asIterable([5])]).toEqual([5]);
- */
-export function* asIterable<T>(arg: T | Iterable<T>): Iterable<T> {
-	if ((arg as Iterable<T>)[Symbol.iterator]) {
-		yield* arg as Iterable<T>;
+export const iterable: {
+	<T>(arg: {[Symbol.iterator](): IterableIterator<T>;}): IterableIterator<T>;
+	<T>(arg: T[]): IterableIterator<T>;
+	<T>(arg: IArguments): IterableIterator<T>;
+} = <T>(arg: Iterable<T> | T[] | IArguments): IterableIterator<T> => {
+	// If arg is an `Iterable<T>`:
+	if (typeof (arg as Iterable<T>)[Symbol.iterator] === 'function') {
+		return (arg as IterableIterator<T>)[Symbol.iterator]();
 	}
-	else {
-		yield arg as T;
+
+	// In case arg[Symbol.iterator] isn't available, e.g. if arg is an
+	// Arguments object.
+	const len: number = (arg as T[]).length;
+	if (typeof len !== 'number') {
+		throw new Error("Not iterable");
 	}
+	return (function*() {
+		for (let i = 0; i < len; ++i) {
+			yield (arg as T[])[i];
+		}
+	})() as IterableIterator<T>;
+};
+
+
+export interface ArgumentIteratorFn {
+	<T>(args: IArguments): IterableIterator<T>;
 }
 
 
@@ -45,4 +54,14 @@ export function cancellable<T>(iterable: Iterable<T>): CancellableIterator<T> {
 	iter.cancel = (): void => { cancelled = true; };
 	(iter as any).cancelled = true;
 	return iter;
+}
+
+
+export function* map<U, V>(iterable: Iterable<U>, fn: (u: U, i: number) => V)
+	:	IterableIterator<V>
+{
+	let i = -1;
+	for (let u of iterable) {
+		yield fn(u, ++i);
+	}
 }

@@ -1,20 +1,37 @@
-import {asIterable, cancellable} from 'jam/util/iterate';
+import {iterable, cancellable} from 'jam/util/iterate';
 
 
-describe("asIterable function", (): void => {
-	it("yields the value if the argument is not iterable", (): void => {
-		expect([...asIterable(4)]).toEqual([4]);
-		expect([...asIterable({x: 1})]).toEqual([{x: 1}]);
-	});
+describe("iterable function", (): void => {
+	const getArguments: any = function getArguments(): IArguments {
+		return arguments;
+	};
 
 	it("yields all values if the argument is iterable", (): void => {
-		expect([...asIterable([1, 2, 3])]).toEqual([1, 2, 3]);
-		expect([...asIterable('hello')]).toEqual(['h', 'e', 'l', 'l', 'o']);
+		expect([...iterable([1, 2, 3])]).toEqual([1, 2, 3]);
+		expect([...iterable('hello')]).toEqual(['h', 'e', 'l', 'l', 'o']);
 
 		const map = new Map([['a', 'A'], ['b', 'B'], ['c', 'C']]);
-		expect([...asIterable(map)]).toEqual([
+		expect([...iterable(map)]).toEqual([
 			['a', 'A'], ['b', 'B'], ['c', 'C']
 		]);
+	});
+
+	it("accepts iterable arguments objects", (): void => {
+		const args = getArguments(1, 2, 3);
+		if (!args[Symbol.iterator]) {
+			args[Symbol.iterator] = function*() {
+				for (let i = 0, len = args.length; i < len; ++i) {
+					yield args[i];
+				}
+			};
+		}
+		expect([...iterable(args)]).toEqual([1, 2, 3]);
+	});
+
+	it("accepts non-iterable arguments objects", (): void => {
+		const args = getArguments(1, 2, 3);
+		delete args[Symbol.iterator];
+		expect([...iterable(args)]).toEqual([1, 2, 3]);
 	});
 });
 
