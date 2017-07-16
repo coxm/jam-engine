@@ -1,3 +1,5 @@
+import {map, iterable} from 'jam/util/iterate';
+
 import {cache} from './cache';
 
 
@@ -45,22 +47,45 @@ export class FileLoader {
 	}
 
 	/**
+	 * Load multiple text files.
+	 *
+	 * @param relpaths the file paths, relative to this loader's base URL.
+	 */
+	texts(...relpaths: string[]): Promise<string[]>;
+	texts(): Promise<string[]> {
+		return Promise.all(
+			map(iterable(arguments), (rel: string) => this.text(rel))
+		);
+	}
+
+	/**
 	 * Load a JSON file.
 	 *
 	 * @param relpath the file path, relative to this loader's base URL.
 	 */
-	json<T>(relpath: string): Promise<T> {
-		return this.text(relpath).then((text: string): T => {
-			try {
-				return JSON.parse(text) as T;
-			}
-			catch (err) {
-				const newError =
-					new Error(`Failed to parse JSON from '${relpath}'`);
-				(newError as any).originalError = err;
-				throw newError;
-			}
-		});
+	async json<T>(relpath: string): Promise<T> {
+		const text: string = await this.text(relpath);
+		try {
+			return JSON.parse(text) as T;
+		}
+		catch (err) {
+			const newError = new Error(
+				`Failed to parse JSON from '${relpath}'`);
+			(newError as any).originalError = err;
+			throw newError;
+		}
+	}
+
+	/**
+	 * Load multiple JSON files.
+	 *
+	 * @param relpaths the file paths, relative to this loader's base URL.
+	 */
+	jsons<T>(...relpaths: string[]): Promise<T[]>;
+	jsons<T>(): Promise<T[]> {
+		return Promise.all(
+			map(iterable(arguments), (rel: string) => this.json<T>(rel))
+		);
 	}
 }
 
