@@ -413,14 +413,13 @@ export function wrap<Wrapped>(
 
 
 /** Resume a state which may be uninitialised, paused, and/or detached. */
-export const resume = (state: State): Promise<void> => (
-	state.init().then((): void => {
-		state.pause();
-		state.attach();
-		state.resume();
-		state.unpause();
-	})
-);
+export async function resume(state: State): Promise<void> {
+	await state.init();
+	state.pause();
+	state.attach();
+	state.resume();
+	state.unpause();
+}
 
 
 /** Reset a state. */
