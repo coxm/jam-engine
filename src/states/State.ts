@@ -350,27 +350,27 @@ export class State {
 }
 
 
-export interface StateMethods {
-	doPreload?: (this: State) => Promise<void>;
+export interface StateMethods<PreloadData, InitData> {
+	doPreload?: (this: State) => Promise<PreloadData>;
 	onUnload?: (this: State) => void;
 
-	doInit?: (this: State, preloadData: any) => any;
+	doInit?: (this: State, preloadData: PreloadData) => InitData;
 	doDeinit?: (this: State) => void;
 
-	doStart?: (this: State, initData: any) => any;
+	doStart?: (this: State, initData: InitData) => void;
 	doStop?: (this: State) => void;
 
-	doPause?: (this: State) => any;
-	doUnpause?: (this: State) => any;
+	doPause?: (this: State) => void;
+	doUnpause?: (this: State) => void;
 
-	doAttach?: (this: State) => any;
-	doDetach?: (this: State) => any;
+	doAttach?: (this: State) => void;
+	doDetach?: (this: State) => void;
 }
 
 
 export function state<Context>(
 	name: string,
-	methods?: StateMethods,
+	methods?: StateMethods<any, any>,
 	context?: Context
 )
 	: State
@@ -394,7 +394,7 @@ const wrapProto: any = {};
 export function wrap<Wrapped>(
 	name: string,
 	context: Wrapped,
-	methods?: StateMethods
+	methods?: StateMethods<any, any>
 )
 	:	StateWrapper<Wrapped>
 {
