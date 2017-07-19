@@ -65,8 +65,6 @@ export class State {
 
 	protected flags: number = StateFlags.none;
 
-	constructor(readonly name: string) {
-	}
 
 	get isPreloaded(): boolean {
 		return 0 !== (this.flags & StateFlags.preloaded);
