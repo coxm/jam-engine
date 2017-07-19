@@ -120,7 +120,7 @@ export class Manager<State, Trigger> {
 	 *
 	 * @throws {Error} on subsequent calls.
 	 */
-	set(key: Alias): void {
+	setInitial(key: Alias): void {
 		if (this.curr) {
 			throw new Error("Already initialised");
 		}
