@@ -1,6 +1,6 @@
 import {State, state as createState} from 'jam/states/State';
-import {Manager, Alias} from 'jam/states/Manager';
 import {Relation} from 'jam/states/Relation';
+import {Manager, Identifier} from 'jam/states/Manager';
 
 
 enum Trigger {
@@ -16,9 +16,9 @@ function createManager(): Manager<State, Trigger> {
 interface TestInitialiser {
 	(): {
 		manager: Manager<State, Trigger>;
-		childKey: Alias;
+		childKey: Identifier;
 		child: State;
-		parentKey: Alias;
+		parentKey: Identifier;
 		parent: State;
 	};
 }
@@ -27,9 +27,9 @@ interface TestInitialiser {
 function testChild(init: TestInitialiser): void {
 	describe("", (): void => {
 		let manager: Manager<State, Trigger>;
-		let childKey: Alias;
+		let childKey: Identifier;
 		let child: State;
-		let parentKey: Alias;
+		let parentKey: Identifier;
 		let parent: State;
 
 		beforeEach((): void => {
@@ -281,7 +281,7 @@ describe("Manager tryNextSibling method", (): void => {
 		oneID = manager.add(one);
 		expect(manager.tryNextSibling(oneID)).toBe(null);
 
-		manager.set(oneID);
+		manager.setInitial(oneID);
 		expect(manager.tryNextSibling()).toBe(null);
 	});
 
@@ -296,13 +296,13 @@ describe("Manager tryNextSibling method", (): void => {
 		});
 		describe("checks the current state if no key is given", (): void => {
 			it("(next sibling)", (): void => {
-				manager.set(oneID);
+				manager.setInitial(oneID);
 				const result = manager.tryNextSibling()!;
 				expect(result[0]).toBe(twoID);
 				expect(result[1]).toBe(two);
 			});
 			it("(no next sibling)", (): void => {
-				manager.set(twoID);
+				manager.setInitial(twoID);
 				expect(manager.tryNextSibling()).toBe(null);
 			});
 		});
@@ -351,7 +351,7 @@ describe("Manager trigger method", (): void => {
 		manager = createManager();
 		initialID = manager.add(initialState = createState('initial'));
 		destID = manager.add(destState = createState('destination'));
-		manager.set(initialID);
+		manager.setInitial(initialID);
 	});
 
 	function expectArgsToBeCorrect(dest: State = destState): void {

@@ -3,7 +3,7 @@ import {noop} from 'jam/util/misc';
 import {Relation} from './Relation';
 
 
-export type Alias = number | string | symbol;
+export type Identifier = number | string | symbol;
 
 
 export type TriggerCallback<State, Trigger> = (
@@ -35,7 +35,7 @@ export interface IDTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
 	/** The ID of the new state. */
-	readonly id: Alias;
+	readonly id: Identifier;
 }
 
 
@@ -52,7 +52,7 @@ export type Transition<S, T> = (
  */
 export interface AddOptions<State, Trigger> {
 	readonly alias?: string | symbol;
-	readonly children?: (Alias | State)[];
+	readonly children?: (Identifier | State)[];
 	readonly transitions?: Transition<State, Trigger>[];
 }
 
@@ -68,9 +68,9 @@ interface Node<State, Trigger> {
 	readonly id: number;
 	readonly alias: PropertyKey | undefined;
 	readonly state: State;
-	children: Alias[];
+	children: Identifier[];
 	transitions: Transition<State, Trigger>[];
-	parent?: Alias;
+	parent?: Identifier;
 }
 
 
@@ -96,7 +96,7 @@ export class Manager<State, Trigger> {
 	/** A callback called after each state transition. */
 	postTrigger: (ev: TriggerEvent<State, Trigger>) => void = noop;
 
-	private nodes = new Map<Alias, Node<State, Trigger>>();
+	private nodes = new Map<Identifier, Node<State, Trigger>>();
 	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger>;
 
@@ -120,7 +120,7 @@ export class Manager<State, Trigger> {
 	 *
 	 * @throws {Error} on subsequent calls.
 	 */
-	setInitial(key: Alias): void {
+	setInitial(key: Identifier): void {
 		if (this.curr) {
 			throw new Error("Already initialised");
 		}
@@ -143,7 +143,7 @@ export class Manager<State, Trigger> {
 	 * @returns the state's ID.
 	 * @throws {Error} if the requested state doesn't exist.
 	 */
-	id(key: Alias): number {
+	id(key: Identifier): number {
 		return this.getNode(key).id;
 	}
 
@@ -153,12 +153,12 @@ export class Manager<State, Trigger> {
 	 * @returns the state object.
 	 * @throws {Error} if the requested state doesn't exist.
 	 */
-	at(key: Alias): State {
+	at(key: Identifier): State {
 		return this.getNode(key).state;
 	}
 
 	/** Check if an alias points to a state. */
-	has(key: Alias): boolean {
+	has(key: Identifier): boolean {
 		return this.nodes.has(key);
 	}
 
@@ -167,7 +167,7 @@ export class Manager<State, Trigger> {
 	 *
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
-	hasChildren(key: Alias): boolean {
+	hasChildren(key: Identifier): boolean {
 		return this.getNode(key).children.length !== 0;
 	}
 
@@ -250,7 +250,7 @@ export class Manager<State, Trigger> {
 	 * @returns an iterable of the referred-to state's children, or if no key
 	 * is provided, the children of the current state.
 	 */
-	*children(key?: Alias): IterableIterator<[Alias, State]> {
+	*children(key?: Identifier): IterableIterator<[Identifier, State]> {
 		const parent = key === undefined ? this.curr : this.getNode(key);
 		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
@@ -264,7 +264,7 @@ export class Manager<State, Trigger> {
 	 * @returns an iterable of the referred-to state's siblings, or if no key
 	 * is provided, the siblings of the current state.
 	 */
-	*siblings(key?: Alias): IterableIterator<[Alias, State]> {
+	*siblings(key?: Identifier): IterableIterator<[Identifier, State]> {
 		const parent = key === undefined ? this.curr : this.getParent(key);
 		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
@@ -279,8 +279,8 @@ export class Manager<State, Trigger> {
 	 * @returns an iterable of the referred-to state's ancestors, or if no key
 	 * is provided, the ancestors of the current state.
 	 */
-	*ancestors(key?: Alias, strict: boolean = false)
-		: IterableIterator<[Alias, State]>
+	*ancestors(key?: Identifier, strict: boolean = false)
+		: IterableIterator<[Identifier, State]>
 	{
 		let node = key === undefined ? this.curr : this.getNode(key);
 		if (!strict) {
@@ -300,7 +300,7 @@ export class Manager<State, Trigger> {
 	 * @returns the parent state ID and object, or null if the state has no
 	 * parent.
 	 */
-	tryParent(key?: Alias): [number, State] | null {
+	tryParent(key?: Identifier): [number, State] | null {
 		const node = key === undefined ? this.curr : this.getNode(key);
 		const parent = this.getNode(node.parent!)!;
 		return node ? [parent.id, parent.state] : null;
@@ -314,7 +314,7 @@ export class Manager<State, Trigger> {
 	 * @returns the next sibling state's ID and object, or null if the state
 	 * has no next sibling.
 	 */
-	tryNextSibling(key?: Alias): [number, State] | null {
+	tryNextSibling(key?: Identifier): [number, State] | null {
 		const node = key === undefined ? this.curr : this.getNode(key);
 		const nextKey = this.getNextSiblingKey(node);
 		if (nextKey === undefined) {
@@ -354,7 +354,7 @@ export class Manager<State, Trigger> {
 	 * @param key the state's ID or alias.
 	 * @param list an array of state transitions.
 	 */
-	addTransitions(key: Alias, list: Transition<State, Trigger>[]): void {
+	addTransitions(key: Identifier, list: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
 		node.transitions = node.transitions.concat(list);
 	}
@@ -368,7 +368,7 @@ export class Manager<State, Trigger> {
 	 * @returns the ID of the child state.
 	 * @throws {Error} if the parent or any child state does not exist.
 	 */
-	appendChild(parentKey: Alias, child: Alias | State): number {
+	appendChild(parentKey: Identifier, child: Identifier | State): number {
 		const parent = this.getNode(parentKey);
 		const childNode = this.getOrCreateNode(child);
 		parent.children.push(childNode.id);
@@ -385,7 +385,9 @@ export class Manager<State, Trigger> {
 	 * @returns the IDs of newly appended children.
 	 * @throws {Error} if the parent or any child state does not exist.
 	 */
-	appendChildren(parentKey: Alias, children: (Alias | State)[]): number[] {
+	appendChildren(parentKey: Identifier, children: (Identifier | State)[])
+		:	number[]
+	{
 		const parent = this.getNode(parentKey);
 		return children.map(child => {
 			const childNode = this.getOrCreateNode(child);
@@ -401,7 +403,7 @@ export class Manager<State, Trigger> {
 	 * @param key the ID or alias of an existing state.
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
-	on(key: Alias, transition: Transition<State, Trigger>): void {
+	on(key: Identifier, transition: Transition<State, Trigger>): void {
 		this.getNode(key).transitions.push(transition);
 	}
 
@@ -412,7 +414,7 @@ export class Manager<State, Trigger> {
 	 * @param transitions an array of transitions to add.
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
-	onMany(key: Alias, transitions: Transition<State, Trigger>[]): void {
+	onMany(key: Identifier, transitions: Transition<State, Trigger>[]): void {
 		const node = this.getNode(key);
 		node.transitions = node.transitions.concat(transitions);
 	}
@@ -425,7 +427,7 @@ export class Manager<State, Trigger> {
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
 	jump(
-		key: Alias,
+		key: Identifier,
 		exit: TriggerCallback<State, Trigger>,
 		enter: TriggerCallback<State, Trigger>
 	)
@@ -484,7 +486,7 @@ export class Manager<State, Trigger> {
 	}
 
 	private _jump(
-		nextID: Alias,
+		nextID: Identifier,
 		trigger: Trigger | null,
 		exit: TriggerCallback<State, Trigger> = noop,
 		enter: TriggerCallback<State, Trigger> = noop
@@ -504,7 +506,7 @@ export class Manager<State, Trigger> {
 		this.curr = next;
 	}
 
-	private getOrCreateNode(arg: Alias | State): Node<State, Trigger> {
+	private getOrCreateNode(arg: Identifier | State): Node<State, Trigger> {
 		return (typeof arg === 'object'
 			?	this.createNode(arg)
 			:	this.getNode(arg)
@@ -527,7 +529,7 @@ export class Manager<State, Trigger> {
 		return node;
 	}
 
-	private getNode(key: Alias): Node<State, Trigger> {
+	private getNode(key: Identifier): Node<State, Trigger> {
 		const node = this.nodes.get(key);
 		if (node) {
 			return node;
@@ -535,7 +537,9 @@ export class Manager<State, Trigger> {
 		throw new Error(`No such state: ${key}`);
 	}
 
-	private getNextSiblingKey(node: Node<State, Trigger>): Alias | undefined {
+	private getNextSiblingKey(node: Node<State, Trigger>)
+		: Identifier | undefined
+	{
 		if (node.parent === undefined) {
 			return undefined;
 		}
@@ -546,7 +550,7 @@ export class Manager<State, Trigger> {
 		return siblings[index + 1];
 	}
 
-	private getParent(key: Alias): Node<State, Trigger> {
+	private getParent(key: Identifier): Node<State, Trigger> {
 		const node = this.getNode(key);
 		if (node.parent === undefined) {
 			throw new Error(`State ${key} has no parent`);
