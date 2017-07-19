@@ -262,8 +262,7 @@ export class State {
 	 *
 	 * Override this method to define this state's preloading requirements.
 	 */
-	protected doPreload(): Promise<any> {
-		return Promise.resolve();
+	protected doPreload(): any {
 	}
 
 	/** Destroy any assets loaded by `doPreload`. */
@@ -276,10 +275,10 @@ export class State {
 	 * Override this method to provide application-specific initialisation. For
 	 * example, scenery and actors might be created here.
 	 *
-	 * @param preloadData the data returned (wrapped in a promise) by
-	 * {@link doPreload}.
+	 * @param preloadData the data obtained from {@link doPreload}.
 	 */
 	protected doInit(preloadData: any): any {
+		return preloadData;
 	}
 
 	/** Un-initialise this state. */
