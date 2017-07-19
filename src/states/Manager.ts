@@ -77,6 +77,14 @@ interface Node<State, Trigger> {
 let idCounter: number = -1;
 
 
+export interface ManagerOptions<State, Trigger> {
+	readonly initial?: string | symbol;
+	readonly states?: [string | symbol, State][];
+	readonly preTrigger?: (ev: TriggerEvent<State, Trigger>) => void;
+	readonly postTrigger?: (ev: TriggerEvent<State, Trigger>) => void;
+}
+
+
 /**
  * State managing class.
  *
@@ -92,12 +100,17 @@ export class Manager<State, Trigger> {
 	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger>;
 
-	constructor(options?: {
-		preTrigger: (ev: TriggerEvent<State, Trigger>) => void;
-		postTrigger: (ev: TriggerEvent<State, Trigger>) => void;
-	}) {
-		this.preTrigger = (options && options.preTrigger) || noop;
-		this.postTrigger = (options && options.postTrigger) || noop;
+	constructor(options: ManagerOptions<State, Trigger> = {}) {
+		if (options.states) {
+			for (const [alias, state] of options.states) {
+				this.add(state, {alias: alias});
+			}
+		}
+		if (options.initial) {
+			this.setInitial(options.initial);
+		}
+		this.preTrigger = options.preTrigger || noop;
+		this.postTrigger = options.postTrigger || noop;
 	}
 
 	/**
