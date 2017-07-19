@@ -1,5 +1,5 @@
-import {State, state as createState} from 'jam/states/State';
 import {Relation} from 'jam/states/Relation';
+import {State} from 'jam/states/State';
 import {Manager, Identifier} from 'jam/states/Manager';
 
 
@@ -112,7 +112,7 @@ describe("Manager add method", (): void => {
 	});
 
 	it("sets an alias if provided", (): void => {
-		const state = createState('test');
+		const state = new State();
 		const alias = 'test-alias';
 		manager.add(state, {alias});
 		expect(manager.at(alias)).toBe(state);
@@ -124,7 +124,7 @@ describe("Manager add method", (): void => {
 		let id: number;
 
 		beforeEach((): void => {
-			state = createState('test');
+			state = new State();
 			id = manager.add(state);
 		});
 
@@ -158,8 +158,8 @@ describe("Manager add method", (): void => {
 
 	describe("can add children", (): void => {
 		testChild(() => {
-			const parent = createState('parent');
-			const child = createState('child');
+			const parent = new State();
+			const child = new State();
 			const childKey = manager.add(child);
 			const parentKey = manager.add(parent, {
 				children: [childKey],
@@ -185,8 +185,8 @@ describe("Manager appendChild method", (): void => {
 
 	describe("can add new child states", (): void => {
 		testChild(() => {
-			const child = createState('child');
-			const parent = createState('parent');
+			const child = new State();
+			const parent = new State();
 			const parentKey = manager.add(parent);
 			const childKey = manager.appendChild(parentKey, child);
 			return {
@@ -201,8 +201,8 @@ describe("Manager appendChild method", (): void => {
 
 	describe("can append existing states", (): void => {
 		testChild(() => {
-			const child = createState('child');
-			const parent = createState('parent');
+			const child = new State();
+			const parent = new State();
 			const parentKey = manager.add(parent);
 			const childKey = manager.add(child);
 			manager.appendChild(parentKey, childKey);
@@ -224,8 +224,8 @@ describe("Manager count method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
-		manager.add(createState('one'));
-		state = createState('two');
+		manager.add(new State());
+		state = new State();
 	});
 
 	it("returns the number of times a state is included", (): void => {
@@ -246,8 +246,8 @@ describe("Manager isUnique method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
-		manager.add(createState('one'));
-		state = createState('two');
+		manager.add(new State());
+		state = new State();
 	});
 
 	it("returns false if the manager has no such state", (): void => {
@@ -277,7 +277,7 @@ describe("Manager tryNextSibling method", (): void => {
 	});
 
 	it("returns null if the state has no parent", (): void => {
-		one = createState('one');
+		one = new State();
 		oneID = manager.add(one);
 		expect(manager.tryNextSibling(oneID)).toBe(null);
 
@@ -310,9 +310,9 @@ describe("Manager tryNextSibling method", (): void => {
 
 	describe("works when IDs are used for child arrays", (): void => {
 		beforeEach((): void => {
-			oneID = manager.add(one = createState('one'));
-			twoID = manager.add(two = createState('two'));
-			manager.add(createState('parent'), {
+			oneID = manager.add(one = new State());
+			twoID = manager.add(two = new State());
+			manager.add(new State(), {
 				children: [oneID, twoID],
 			});
 		});
@@ -320,10 +320,11 @@ describe("Manager tryNextSibling method", (): void => {
 	});
 	describe("works when aliases are used for child arrays", (): void => {
 		beforeEach((): void => {
-			oneID = manager.add(one = createState('one'), {alias: 'one'});
-			twoID = manager.add(two = createState('two'), {alias: 'two'});
-			manager.add(createState('parent'), {
-				children: [one.name, two.name],
+			oneID = manager.add(one = new State(), {alias: 'one'});
+			twoID = manager.add(two = new State(), {alias: 'two'});
+			manager.add(new State(), {
+				alias: 'parent',
+				children: ['one', 'two'],
 			});
 		});
 		test();
@@ -349,8 +350,8 @@ describe("Manager trigger method", (): void => {
 
 	beforeEach((): void => {
 		manager = createManager();
-		initialID = manager.add(initialState = createState('initial'));
-		destID = manager.add(destState = createState('destination'));
+		initialID = manager.add(initialState = new State());
+		destID = manager.add(destState = new State());
 		manager.setInitial(initialID);
 	});
 
@@ -421,7 +422,7 @@ describe("Manager trigger method", (): void => {
 			expectArgsToBeCorrect();
 		});
 		it("Relation.sibling", (): void => {
-			const parent = createState('parent');
+			const parent = new State();
 			const parentID = manager.add(parent);
 			manager.appendChildren(parentID, [initialID, destID]);
 			manager.addTransitions(initialID, [{
@@ -438,7 +439,7 @@ describe("Manager trigger method", (): void => {
 
 		describe("Relation.siblingElseUp", (): void => {
 			it("to a sibling (if extant)", (): void => {
-				const parent = createState('parent');
+				const parent = new State();
 				const parentID = manager.add(parent);
 				manager.appendChildren(parentID, [initialID, destID]);
 				manager.addTransitions(initialID, [{
@@ -453,7 +454,7 @@ describe("Manager trigger method", (): void => {
 				expectArgsToBeCorrect();
 			});
 			it("to the parent (if no more siblings)", (): void => {
-				const parent = createState('parent');
+				const parent = new State();
 				const parentID = manager.add(parent);
 				// There are siblings, but initial is the *last*.
 				manager.appendChildren(parentID, [destID, initialID]);

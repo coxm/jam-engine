@@ -33,6 +33,24 @@ export interface StateEvent<T> {
 }
 
 
+export interface StateMethods<PreloadData, InitData> {
+	readonly doPreload?: (this: State) => Promise<PreloadData>;
+	readonly onUnload?: (this: State) => void;
+
+	readonly doInit?: (this: State, preloadData: PreloadData) => InitData;
+	readonly doDeinit?: (this: State) => void;
+
+	readonly doStart?: (this: State, initData: InitData) => void;
+	readonly doStop?: (this: State) => void;
+
+	readonly doPause?: (this: State) => void;
+	readonly doUnpause?: (this: State) => void;
+
+	readonly doAttach?: (this: State) => void;
+	readonly doDetach?: (this: State) => void;
+}
+
+
 /**
  * Basic state class.
  *
@@ -65,6 +83,9 @@ export class State {
 
 	protected flags: number = StateFlags.none;
 
+	constructor(options?: StateMethods<any, any>) {
+		Object.assign(this, options);
+	}
 
 	get isPreloaded(): boolean {
 		return 0 !== (this.flags & StateFlags.preloaded);
@@ -345,68 +366,6 @@ export class State {
 		this.doStart(initData);
 		this.flags |= StateFlags.running;
 	}
-}
-
-
-export interface StateMethods<PreloadData, InitData> {
-	doPreload?: (this: State) => Promise<PreloadData>;
-	onUnload?: (this: State) => void;
-
-	doInit?: (this: State, preloadData: PreloadData) => InitData;
-	doDeinit?: (this: State) => void;
-
-	doStart?: (this: State, initData: InitData) => void;
-	doStop?: (this: State) => void;
-
-	doPause?: (this: State) => void;
-	doUnpause?: (this: State) => void;
-
-	doAttach?: (this: State) => void;
-	doDetach?: (this: State) => void;
-}
-
-
-export function state<Context>(
-	name: string,
-	methods?: StateMethods<any, any>,
-	context?: Context
-)
-	: State
-{
-	const state = new State(name);
-	if (methods) {
-		for (const key in <any> methods) {
-			(<any> state)[key] = (<any> methods)[key];
-		}
-	}
-	return state;
-}
-
-
-export interface StateWrapper<Wrapped> extends State {
-	readonly context: Wrapped;
-}
-
-
-const wrapProto: any = {};
-export function wrap<Wrapped>(
-	name: string,
-	context: Wrapped,
-	methods?: StateMethods<any, any>
-)
-	:	StateWrapper<Wrapped>
-{
-	const state = new State(name);
-	if (methods) {
-		for (const key in <any> methods) {
-			(<any> state)[key] = wrapProto[key] || (
-				wrapProto[key] = function(this: any): any {
-					return this.context[key].apply(this.context, arguments);
-				}
-			);
-		}
-	}
-	return <StateWrapper<Wrapped>> state;
 }
 
 

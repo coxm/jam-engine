@@ -15,7 +15,7 @@ describe("state event", (): void => {
 	describe("preloadBegin", (): void => {
 		const testName: string = "is fired when a state starts preloading";
 		it(testName, (done): void => {
-			const state = new State(testName);
+			const state = new State();
 			spyOn(state, 'doPreload').and.returnValue(neverResolve());
 			state.preload();
 			expect(onEvent).toHaveBeenCalledTimes(1);
@@ -28,7 +28,7 @@ describe("state event", (): void => {
 
 		const testName2: string = "isn't fired if preloading already happened";
 		it(testName2, (done): void => {
-			const state = new State(testName2);
+			const state = new State();
 			state.preload().then((): void => {
 				onEvent.calls.reset();
 				state.preload();
@@ -41,7 +41,7 @@ describe("state event", (): void => {
 	describe("preloadEnd", (): void => {
 		const testNameA: string = "isn't fired prematurely";
 		it(testNameA, (done): void => {
-			const state = new State(testNameA);
+			const state = new State();
 			spyOn(state, 'doPreload').and.returnValue(neverResolve());
 			state.preload();
 			setTimeout((): void => {
@@ -57,7 +57,7 @@ describe("state event", (): void => {
 		const testNameB: string = "is fired when a state is done preloading";
 		it(testNameB, (done): void => {
 			const preloadData = {fake: 'data'};
-			const state = new State(testNameB);
+			const state = new State();
 			spyOn(state, 'doPreload').and.returnValue(
 				Promise.resolve(preloadData)
 			);
@@ -76,7 +76,7 @@ describe("state event", (): void => {
 		let state: State;
 
 		beforeEach((): void => {
-			state = new State("init test");
+			state = new State();
 		});
 
 		it("isn't fired until the state is preloaded", (done): void => {
@@ -125,7 +125,7 @@ describe("state event", (): void => {
 		let state: State = <any> null;
 
 		beforeEach((): void => {
-			state = new State('pause test');
+			state = new State();
 		});
 
 		it("is fired on state pause", (): void => {
@@ -166,7 +166,7 @@ describe("state event", (): void => {
 		let state: State = <any> null;
 
 		beforeEach((): void => {
-			state = new State('unpausing test');
+			state = new State();
 		});
 
 		it("is fired on state unpause", (): void => {
@@ -202,7 +202,7 @@ describe("state event", (): void => {
 		let state: State;
 
 		beforeEach((): void => {
-			state = new State('destroy test');
+			state = new State();
 		});
 
 		it("isn't fired if the state wasn't running", (done): void => {
@@ -230,7 +230,7 @@ describe("State#preload", (): void => {
 	let state: State;
 
 	beforeEach((): void => {
-		state = new State('State#preload test');
+		state = new State();
 	});
 
 	it("loads the data if unloaded", (done): void => {
@@ -260,7 +260,7 @@ describe("State#init", (): void => {
 	let doInit: jasmine.Spy;
 
 	beforeEach((): void => {
-		state = new State('State#init test');
+		state = new State();
 		doInit = spyOn(state, 'doInit');
 	});
 
@@ -292,7 +292,7 @@ describe("State#start", (): void => {
 	let doStart: jasmine.Spy;
 
 	beforeEach((): void => {
-		state = new State('State#start test');
+		state = new State();
 		doStart = spyOn(state, 'doStart');
 	});
 
@@ -344,7 +344,7 @@ describe("State#restart", () => {
 	let state: State;
 
 	beforeEach((): void => {
-		state = new State('State#restart test');
+		state = new State();
 	});
 
 	it("starts the state if not running", (done) => {
