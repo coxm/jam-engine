@@ -1,3 +1,4 @@
+import {noop} from 'jam/util/misc';
 import {pair} from 'jam/util/pairing';
 import {cancellable, CancellableIterator} from 'jam/util/iterate';
 
@@ -29,8 +30,8 @@ export interface SensorContactEvent {
 
 
 export interface ContactManagerOptions {
-	onNormalContact(ev: NormalContactEvent): void;
-	onSensorContact(ev: SensorContactEvent): void;
+	onNormalContact?: (ev: NormalContactEvent) => void;
+	onSensorContact?: (ev: SensorContactEvent) => void;
 }
 
 
@@ -48,6 +49,12 @@ export class ContactManager {
 	private world: p2.World | null = null;
 
 	constructor(public readonly options: ContactManagerOptions) {
+		if (!options.onNormalContact) {
+			options.onNormalContact = noop;
+		}
+		if (!options.onSensorContact) {
+			options.onSensorContact = noop;
+		}
 	}
 
 	get isInstalled(): boolean {
@@ -129,14 +136,14 @@ export class ContactManager {
 		let b = {shape: ev.shapeB, body: ev.bodyB};
 
 		if (a.shape.sensor) {
-			this.options.onSensorContact({begin, sensor: a, normal: b});
+			this.options.onSensorContact!({begin, sensor: a, normal: b});
 			return;
 		}
 		else if (b.shape.sensor) {
-			this.options.onSensorContact({begin, normal: a, sensor: b});
+			this.options.onSensorContact!({begin, normal: a, sensor: b});
 		}
 		else {
-			this.options.onNormalContact({begin, a, b});
+			this.options.onNormalContact!({begin, a, b});
 		}
 	}
 }
