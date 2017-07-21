@@ -49,8 +49,12 @@ export class Camera {
 		return this.stage.position.y + (1 - this.stage.scale.y) * this.hh;
 	}
 
-	set x(v: number) { this.stage.position.x = this.hw - this.stage.scale.x * v; }
-	set y(v: number) { this.stage.position.y = this.hh - this.stage.scale.y * v; }
+	set x(v: number) {
+		this.stage.position.x = this.hw - this.stage.scale.x * v;
+	}
+	set y(v: number) {
+		this.stage.position.y = this.hh - this.stage.scale.y * v;
+	}
 
 	/** Move the camera to a new position. */
 	moveTo(x: number, y: number): void {
