@@ -6,13 +6,20 @@ import {Relation} from './Relation';
 export type Alias = number | string | symbol;
 
 
+export type TriggerCallback<State, Trigger> = (
+	state: State,
+	trigger: Trigger | null,
+	manager: Manager<State, Trigger>
+) => void;
+
+
 export interface TransitionBase<State, Trigger> {
 	/** The trigger for this transition or `null` if caused by a jump. */
 	readonly trigger: Trigger | null;
 	/** A callback for shutting down the outgoing state. */
-	readonly exit?: (state: State, trigger: Trigger | null) => void;
+	readonly exit?: TriggerCallback<State, Trigger>;
 	/** A callback for initialising the incoming state. */
-	readonly enter?: (state: State, trigger: Trigger | null) => void;
+	readonly enter?: TriggerCallback<State, Trigger>;
 }
 
 
@@ -389,8 +396,8 @@ export class Manager<State, Trigger> {
 	 */
 	jump(
 		key: Alias,
-		exit: (state: State, trigger: null) => void,
-		enter: (state: State, trigger: null) => void
+		exit: TriggerCallback<State, Trigger>,
+		enter: TriggerCallback<State, Trigger>
 	)
 		: void
 	{
@@ -451,8 +458,8 @@ export class Manager<State, Trigger> {
 	private _jump(
 		nextID: Alias,
 		trigger: Trigger | null,
-		exit: (state: State, trigger: Trigger | null) => void = noop,
-		enter: (state: State, trigger: Trigger | null) => void = noop
+		exit: TriggerCallback<State, Trigger> = noop,
+		enter: TriggerCallback<State, Trigger> = noop
 	)
 		: void
 	{
@@ -463,8 +470,8 @@ export class Manager<State, Trigger> {
 			trigger: trigger,
 		};
 		this.preTrigger(ev);
-		exit(ev.old, trigger);
-		enter(ev.new, trigger);
+		exit(ev.old, trigger, this);
+		enter(ev.new, trigger, this);
 		this.postTrigger(ev);
 		this.curr = next;
 	}
