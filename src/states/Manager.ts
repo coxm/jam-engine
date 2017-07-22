@@ -9,8 +9,10 @@ export type Alias = number | string | symbol;
 export interface TransitionBase<State, Trigger> {
 	/** The trigger for this transition or `null` if caused by a jump. */
 	readonly trigger: Trigger | null;
-	/** How to deal with the outgoing state. */
-	readonly exit: (state: State, trigger: Trigger | null) => void;
+	/** A callback for shutting down the outgoing state. */
+	readonly exit?: (state: State, trigger: Trigger | null) => void;
+	/** A callback for initialising the incoming state. */
+	readonly enter?: (state: State, trigger: Trigger | null) => void;
 }
 
 
@@ -385,8 +387,14 @@ export class Manager<State, Trigger> {
 	 * @param exit an exit strategy for leaving the current state.
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
-	jump(key: Alias, exit: (state: State, trigger: null) => void): void {
-		this._jump(key, null, exit);
+	jump(
+		key: Alias,
+		exit: (state: State, trigger: null) => void,
+		enter: (state: State, trigger: null) => void
+	)
+		: void
+	{
+		this._jump(key, null, exit, enter);
 	}
 
 	/**
@@ -430,7 +438,7 @@ export class Manager<State, Trigger> {
 					break;
 			}
 		}
-		this._jump(nextID, trigger, transition.exit);
+		this._jump(nextID, trigger, transition.exit, transition.enter);
 	}
 
 	/**
@@ -443,7 +451,8 @@ export class Manager<State, Trigger> {
 	private _jump(
 		nextID: Alias,
 		trigger: Trigger | null,
-		exit: (state: State, trigger: Trigger | null) => void
+		exit: (state: State, trigger: Trigger | null) => void = noop,
+		enter: (state: State, trigger: Trigger | null) => void = noop
 	)
 		: void
 	{
@@ -455,8 +464,9 @@ export class Manager<State, Trigger> {
 		};
 		this.preTrigger(ev);
 		exit(ev.old, trigger);
-		this.curr = next;
+		enter(ev.new, trigger);
 		this.postTrigger(ev);
+		this.curr = next;
 	}
 
 	private getOrCreateNode(arg: Alias | State): Node<State, Trigger> {
