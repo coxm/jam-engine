@@ -418,7 +418,6 @@ export async function resume(state: State): Promise<void> {
 	state.pause();
 	state.attach();
 	state.resume();
-	state.unpause();
 }
 
 
