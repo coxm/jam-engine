@@ -1,5 +1,6 @@
 import {State, state as createState} from 'jam/states/State';
 import {Manager, Alias} from 'jam/states/Manager';
+import {Relation} from 'jam/states/Relation';
 
 
 enum Trigger {
@@ -260,5 +261,147 @@ describe("Manager isUnique method", (): void => {
 		manager.add(state);
 		manager.add(state);
 		expect(manager.isUnique(state)).toBe(false);
+	});
+});
+
+
+describe("Manager trigger method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let exitArgs: any[];
+	let enterArgs: any[];
+	let initialID: number;
+	let destID: number;
+	let initialState: State;
+	let destState: State;
+
+	function enter(): void {
+		enterArgs = Array.from(arguments);
+	}
+	function exit(): void {
+		exitArgs = Array.from(arguments);
+	}
+
+	beforeEach((): void => {
+		manager = createManager();
+		initialID = manager.add(initialState = createState('initial'));
+		destID = manager.add(destState = createState('destination'));
+		manager.set(initialID);
+	});
+
+	function expectArgsToBeCorrect(dest: State = destState): void {
+		expect(exitArgs.length).toBe(3);
+		expect(exitArgs[0]).toBe(initialState);
+		expect(exitArgs[1]).toBe(Trigger.trigger1);
+		expect(exitArgs[2]).toBe(manager);
+
+		expect(enterArgs.length).toBe(3);
+		expect(enterArgs[0]).toBe(dest);
+		expect(enterArgs[1]).toBe(Trigger.trigger1);
+		expect(enterArgs[2]).toBe(manager);
+	}
+
+	it("calls onEmptyTransition if no such transition exists", (): void => {
+		const spy = spyOn(manager, 'onEmptyTransition');
+		manager.trigger(Trigger.trigger1);
+		expect(spy).toHaveBeenCalledWith(Trigger.trigger1, initialState);
+	});
+
+	it("can transition to an ID", (): void => {
+		manager.addTransitions(initialID, [{
+			trigger: Trigger.trigger1,
+			id: destID,
+			enter,
+			exit,
+		}]);
+		manager.trigger(Trigger.trigger1);
+		expect(manager.current).toBe(destState);
+		expectArgsToBeCorrect();
+	});
+
+	describe("can transition via", (): void => {
+		it("Relation.same", (): void => {
+			manager.addTransitions(initialID, [{
+				trigger: Trigger.trigger1,
+				rel: Relation.same,
+				enter,
+				exit,
+			}]);
+			manager.trigger(Trigger.trigger1);
+			expect(manager.current).toBe(initialState);
+			expectArgsToBeCorrect(initialState);
+		});
+		it("Relation.child", (): void => {
+			manager.appendChild(initialID, destID);
+			manager.addTransitions(initialID, [{
+				trigger: Trigger.trigger1,
+				rel: Relation.child,
+				enter,
+				exit,
+			}]);
+			manager.trigger(Trigger.trigger1);
+			expect(manager.current).toBe(destState);
+			expectArgsToBeCorrect();
+		});
+		it("Relation.parent", (): void => {
+			manager.appendChild(destID, initialID);
+			manager.addTransitions(initialID, [{
+				trigger: Trigger.trigger1,
+				rel: Relation.parent,
+				enter,
+				exit,
+			}]);
+			manager.trigger(Trigger.trigger1);
+			expect(manager.current).toBe(destState);
+			expectArgsToBeCorrect();
+		});
+		it("Relation.sibling", (): void => {
+			const parent = createState('parent');
+			const parentID = manager.add(parent);
+			manager.appendChildren(parentID, [initialID, destID]);
+			manager.addTransitions(initialID, [{
+				trigger: Trigger.trigger1,
+				rel: Relation.sibling,
+				enter,
+				exit,
+			}]);
+
+			manager.trigger(Trigger.trigger1);
+			expect(manager.current).toBe(destState);
+			expectArgsToBeCorrect();
+		});
+
+		describe("Relation.siblingElseUp", (): void => {
+			it("to a sibling (if extant)", (): void => {
+				const parent = createState('parent');
+				const parentID = manager.add(parent);
+				manager.appendChildren(parentID, [initialID, destID]);
+				manager.addTransitions(initialID, [{
+					trigger: Trigger.trigger1,
+					rel: Relation.siblingElseUp,
+					enter,
+					exit,
+				}]);
+
+				manager.trigger(Trigger.trigger1);
+				expect(manager.current).toBe(destState);
+				expectArgsToBeCorrect();
+			});
+			it("to the parent (if no more siblings)", (): void => {
+				const parent = createState('parent');
+				const parentID = manager.add(parent);
+				// There are siblings, but initial is the *last*.
+				manager.appendChildren(parentID, [destID, initialID]);
+				manager.addTransitions(initialID, [{
+					trigger: Trigger.trigger1,
+					rel: Relation.siblingElseUp,
+					enter,
+					exit,
+				}]);
+
+				manager.trigger(Trigger.trigger1);
+				expect(manager.current).toBe(parent);
+				expectArgsToBeCorrect(parent);
+			});
+		});
 	});
 });

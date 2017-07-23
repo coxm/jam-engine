@@ -415,21 +415,20 @@ export class Manager<State, Trigger> {
 			tr => tr.trigger === trigger
 		);
 		if (!transition) {
-			return this.onEmptyTransition(trigger);
+			return this.onEmptyTransition(trigger, this.current);
 		}
 		let nextID = (<IDTransition<State, Trigger>> transition).id;
+		const rel = (transition as RelationTransition<State, Trigger>).rel;
 		if (typeof nextID !== 'number') {
-			switch (
-				(<RelationTransition<State, Trigger>> transition).rel
-			) {
+			switch (rel) {
 				case Relation.sibling:
 				case Relation.siblingElseUp: {
 					const siblings = this.getNode(this.curr.parent!).children;
-					nextID = siblings[siblings.length - 1];
-					if (nextID === undefined && (
-						(transition as RelationTransition<State, Trigger>).rel
-							=== Relation.siblingElseUp
-					)) {
+					nextID = siblings[siblings.indexOf(this.curr.id) + 1];
+					if (nextID === undefined) {
+						if (rel !== Relation.siblingElseUp) {
+							throw new Error("No more siblings");
+						}
 						nextID = this.curr.parent!;
 					}
 					break;
@@ -451,7 +450,7 @@ export class Manager<State, Trigger> {
 	/**
 	 * Callback used when a trigger is fired for a state which doesn't have it.
 	 */
-	protected onEmptyTransition(trigger: Trigger): void {
+	protected onEmptyTransition(trigger: Trigger, state: State): void {
 		throw new Error("No transition for trigger: " + trigger);
 	}
 
