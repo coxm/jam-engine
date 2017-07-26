@@ -66,6 +66,7 @@ export interface TriggerEvent<State, Trigger> {
 
 interface Node<State, Trigger> {
 	readonly id: number;
+	readonly alias: PropertyKey | undefined;
 	readonly state: State;
 	children: Alias[];
 	transitions: Transition<State, Trigger>[];
@@ -282,7 +283,7 @@ export class Manager<State, Trigger> {
 	 * Attempt to get the parent of a state.
 	 *
 	 * @param key the ID or alias of a state in the tree, or (if not provided)
-	 * of the current state..
+	 * of the current state.
 	 * @returns the parent state ID and object, or null if the state has no
 	 * parent.
 	 */
@@ -290,6 +291,24 @@ export class Manager<State, Trigger> {
 		const node = key === undefined ? this.curr : this.getNode(key);
 		const parent = this.getNode(node.parent!)!;
 		return node ? [parent.id, parent.state] : null;
+	}
+
+	/**
+	 * Attempt to get the next sibling after a state.
+	 *
+	 * @param key the ID or alias of a state in the tree, or (if not provided)
+	 * of the current state.
+	 * @returns the next sibling state's ID and object, or null if the state
+	 * has no next sibling.
+	 */
+	tryNextSibling(key?: Alias): [number, State] | null {
+		const node = key === undefined ? this.curr : this.getNode(key);
+		const nextKey = this.getNextSiblingKey(node);
+		if (nextKey === undefined) {
+			return null;
+		}
+		const next = this.getNode(nextKey);
+		return [next.id, next.state];
 	}
 
 	/**
@@ -302,18 +321,16 @@ export class Manager<State, Trigger> {
 	 * append to the new state.
 	 * @param options.transitions any transitions to add to the new state.
 	 */
-	add(state: State, options?: AddOptions<State, Trigger>): number {
-		const node = this.createNode(state);
-		if (options && options.hasOwnProperty('alias')) {
+	add(state: State, options: AddOptions<State, Trigger> = {}): number {
+		const node = this.createNode(state, options.alias!);
+		if (options.hasOwnProperty('alias')) {
 			this.nodes.set(options.alias!, node);
 		}
-		if (options) {
-			if (options.children) {
-				this.appendChildren(node.id, options.children);
-			}
-			if (options.transitions) {
-				this.onMany(node.id, options.transitions);
-			}
+		if (options.children) {
+			this.appendChildren(node.id, options.children);
+		}
+		if (options.transitions) {
+			this.onMany(node.id, options.transitions);
 		}
 		return node.id;
 	}
@@ -423,8 +440,7 @@ export class Manager<State, Trigger> {
 			switch (rel) {
 				case Relation.sibling:
 				case Relation.siblingElseUp: {
-					const siblings = this.getNode(this.curr.parent!).children;
-					nextID = siblings[siblings.indexOf(this.curr.id) + 1];
+					nextID = this.getNextSiblingKey(this.curr)!;
 					if (nextID === undefined) {
 						if (rel !== Relation.siblingElseUp) {
 							throw new Error("No more siblings");
@@ -482,10 +498,13 @@ export class Manager<State, Trigger> {
 		);
 	}
 
-	private createNode(state: State): Node<State, Trigger> {
+	private createNode(state: State, alias?: PropertyKey)
+		: Node<State, Trigger>
+	{
 		const id = ++idCounter;
 		const node = {
 			id,
+			alias,
 			state,
 			children: [],
 			transitions: [],
@@ -501,6 +520,17 @@ export class Manager<State, Trigger> {
 			return node;
 		}
 		throw new Error(`No such state: ${key}`);
+	}
+
+	private getNextSiblingKey(node: Node<State, Trigger>): Alias | undefined {
+		if (node.parent === undefined) {
+			return undefined;
+		}
+		const siblings = this.getNode(node.parent).children;
+		const index: number = (node.alias === undefined
+			?	siblings.indexOf(node.id)
+			:	siblings.findIndex(s => s === node.id || s === node.alias));
+		return siblings[index + 1];
 	}
 
 	private getParent(key: Alias): Node<State, Trigger> {

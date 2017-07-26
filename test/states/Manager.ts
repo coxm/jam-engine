@@ -265,6 +265,72 @@ describe("Manager isUnique method", (): void => {
 });
 
 
+describe("Manager tryNextSibling method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let one: State;
+	let two: State;
+	let oneID: number;
+	let twoID: number;
+
+	beforeEach((): void => {
+		manager = createManager();
+	});
+
+	it("returns null if the state has no parent", (): void => {
+		one = createState('one');
+		oneID = manager.add(one);
+		expect(manager.tryNextSibling(oneID)).toBe(null);
+
+		manager.set(oneID);
+		expect(manager.tryNextSibling()).toBe(null);
+	});
+
+	function test(): void {
+		it("returns null if the state has no next sibling", (): void => {
+			expect(manager.tryNextSibling(twoID)).toBe(null);
+		});
+		it("returns the next sibling and its ID if the", (): void => {
+			const result = manager.tryNextSibling(oneID)!;
+			expect(result[0]).toBe(twoID);
+			expect(result[1]).toBe(two);
+		});
+		describe("checks the current state if no key is given", (): void => {
+			it("(next sibling)", (): void => {
+				manager.set(oneID);
+				const result = manager.tryNextSibling()!;
+				expect(result[0]).toBe(twoID);
+				expect(result[1]).toBe(two);
+			});
+			it("(no next sibling)", (): void => {
+				manager.set(twoID);
+				expect(manager.tryNextSibling()).toBe(null);
+			});
+		});
+	}
+
+	describe("works when IDs are used for child arrays", (): void => {
+		beforeEach((): void => {
+			oneID = manager.add(one = createState('one'));
+			twoID = manager.add(two = createState('two'));
+			manager.add(createState('parent'), {
+				children: [oneID, twoID],
+			});
+		});
+		test();
+	});
+	describe("works when aliases are used for child arrays", (): void => {
+		beforeEach((): void => {
+			oneID = manager.add(one = createState('one'), {alias: 'one'});
+			twoID = manager.add(two = createState('two'), {alias: 'two'});
+			manager.add(createState('parent'), {
+				children: [one.name, two.name],
+			});
+		});
+		test();
+	});
+});
+
+
 describe("Manager trigger method", (): void => {
 	let manager: Manager<State, Trigger>;
 	let exitArgs: any[];
