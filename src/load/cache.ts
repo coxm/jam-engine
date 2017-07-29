@@ -102,11 +102,11 @@ export function cache(store: AnyStoreArg, keyGetter: AnyKeyGetter)
 }
 
 
-export function firstArgument(args: IArguments): any {
-	return args[0];
-}
+export const firstArgument = (args: IArguments): any => args[0];
 
 
-export function cacheUnderFirstArgument(store: AnyStoreArg): MethodDecorator {
-	return cache(store, firstArgument);
-}
+export const cacheUnderFirstArgument = (store: AnyStoreArg): MethodDecorator =>
+	cache(store, firstArgument);
+
+
+export const simpleCache = cacheUnderFirstArgument('cache');

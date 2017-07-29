@@ -71,11 +71,11 @@ function fetchTextures(
 
 export class TextureLoader extends FileLoader {
 	cached(relpath: string): PIXI.Texture {
-		return PIXI.utils.TextureCache[this.abspath(relpath)];
+		return PIXI.utils.TextureCache[this.expandPath(relpath)];
 	}
 
 	texture(relpath: string): Promise<PIXI.Texture> {
-		return this.textureAbs(this.abspath(relpath));
+		return this.textureAbs(this.expandPath(relpath));
 	}
 
 	textureAbs(abspath: string): Promise<PIXI.Texture> {
@@ -84,7 +84,7 @@ export class TextureLoader extends FileLoader {
 
 	textures(...relpaths: string[]): Promise<PIXI.Texture[]> {
 		return this.texturesAbs(
-			...relpaths.map(rel => this.abspath(rel))
+			...relpaths.map(rel => this.expandPath(rel))
 		);
 	}
 
