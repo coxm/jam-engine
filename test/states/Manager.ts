@@ -334,37 +334,48 @@ describe("Manager tryNextSibling method", (): void => {
 
 describe("Manager trigger method", (): void => {
 	let manager: Manager<State, Trigger>;
-	let exitArgs: any[];
-	let enterArgs: any[];
+	let changeArgs: any[];
 	let initialID: number;
 	let destID: number;
 	let initialState: State;
 	let destState: State;
+	const initialAlias: string = 'initial';
+	const destAlias: string = 'dest';
 
-	function enter(): void {
-		enterArgs = Array.from(arguments);
-	}
-	function exit(): void {
-		exitArgs = Array.from(arguments);
+	function change(): void {
+		changeArgs = Array.from(arguments);
 	}
 
 	beforeEach((): void => {
 		manager = createManager();
-		initialID = manager.add(initialState = new State());
-		destID = manager.add(destState = new State());
+		initialID = manager.add(initialState = new State(), {
+			alias: initialAlias,
+		});
+		destID = manager.add(destState = new State(), {
+			alias: destAlias,
+		});
 		manager.setInitial(initialID);
 	});
 
-	function expectArgsToBeCorrect(dest: State = destState): void {
-		expect(exitArgs.length).toBe(3);
-		expect(exitArgs[0]).toBe(initialState);
-		expect(exitArgs[1]).toBe(Trigger.trigger1);
-		expect(exitArgs[2]).toBe(manager);
-
-		expect(enterArgs.length).toBe(3);
-		expect(enterArgs[0]).toBe(dest);
-		expect(enterArgs[1]).toBe(Trigger.trigger1);
-		expect(enterArgs[2]).toBe(manager);
+	function expectArgsToBeCorrect(
+		dest: {state: State; id: number; alias: string | undefined;} = {
+			id: destID,
+			state: destState,
+			alias: destAlias,
+		}
+	)
+		: void
+	{
+		expect(changeArgs.length).toBe(2);
+		const arg = changeArgs[0];
+		expect(arg.old).toEqual({
+			id: initialID,
+			state: initialState,
+			alias: initialAlias,
+		});
+		expect(arg.new).toEqual(dest);
+		expect(arg.trigger).toBe(Trigger.trigger1);
+		expect(changeArgs[1]).toBe(manager);
 	}
 
 	it("calls onEmptyTransition if no such transition exists", (): void => {
@@ -377,8 +388,7 @@ describe("Manager trigger method", (): void => {
 		manager.addTransitions(initialID, [{
 			trigger: Trigger.trigger1,
 			id: destID,
-			enter,
-			exit,
+			change,
 		}]);
 		manager.trigger(Trigger.trigger1);
 		expect(manager.current).toBe(destState);
@@ -390,20 +400,22 @@ describe("Manager trigger method", (): void => {
 			manager.addTransitions(initialID, [{
 				trigger: Trigger.trigger1,
 				rel: Relation.same,
-				enter,
-				exit,
+				change,
 			}]);
 			manager.trigger(Trigger.trigger1);
 			expect(manager.current).toBe(initialState);
-			expectArgsToBeCorrect(initialState);
+			expectArgsToBeCorrect({
+				id: initialID,
+				state: initialState,
+				alias: initialAlias,
+			});
 		});
 		it("Relation.child", (): void => {
 			manager.appendChild(initialID, destID);
 			manager.addTransitions(initialID, [{
 				trigger: Trigger.trigger1,
 				rel: Relation.child,
-				enter,
-				exit,
+				change,
 			}]);
 			manager.trigger(Trigger.trigger1);
 			expect(manager.current).toBe(destState);
@@ -414,8 +426,7 @@ describe("Manager trigger method", (): void => {
 			manager.addTransitions(initialID, [{
 				trigger: Trigger.trigger1,
 				rel: Relation.parent,
-				enter,
-				exit,
+				change,
 			}]);
 			manager.trigger(Trigger.trigger1);
 			expect(manager.current).toBe(destState);
@@ -428,8 +439,7 @@ describe("Manager trigger method", (): void => {
 			manager.addTransitions(initialID, [{
 				trigger: Trigger.trigger1,
 				rel: Relation.sibling,
-				enter,
-				exit,
+				change,
 			}]);
 
 			manager.trigger(Trigger.trigger1);
@@ -445,8 +455,7 @@ describe("Manager trigger method", (): void => {
 				manager.addTransitions(initialID, [{
 					trigger: Trigger.trigger1,
 					rel: Relation.siblingElseUp,
-					enter,
-					exit,
+					change,
 				}]);
 
 				manager.trigger(Trigger.trigger1);
@@ -461,13 +470,16 @@ describe("Manager trigger method", (): void => {
 				manager.addTransitions(initialID, [{
 					trigger: Trigger.trigger1,
 					rel: Relation.siblingElseUp,
-					enter,
-					exit,
+					change,
 				}]);
 
 				manager.trigger(Trigger.trigger1);
 				expect(manager.current).toBe(parent);
-				expectArgsToBeCorrect(parent);
+				expectArgsToBeCorrect({
+					id: parentID,
+					state: parent,
+					alias: undefined,
+				});
 			});
 		});
 	});

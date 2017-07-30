@@ -7,8 +7,7 @@ export type Identifier = number | string | symbol;
 
 
 export type TriggerCallback<State, Trigger> = (
-	state: State,
-	trigger: Trigger | null,
+	ev: TriggerEvent<State, Trigger>,
 	manager: Manager<State, Trigger>
 ) => void;
 
@@ -16,10 +15,8 @@ export type TriggerCallback<State, Trigger> = (
 export interface TransitionBase<State, Trigger> {
 	/** The trigger for this transition or `null` if caused by a jump. */
 	readonly trigger: Trigger | null;
-	/** A callback for shutting down the outgoing state. */
-	readonly exit?: TriggerCallback<State, Trigger>;
-	/** A callback for initialising the incoming state. */
-	readonly enter?: TriggerCallback<State, Trigger>;
+	/** A callback for shutting down the old state and initialising the new. */
+	readonly change?: TriggerCallback<State, Trigger>;
 }
 
 
@@ -51,16 +48,27 @@ export type Transition<S, T> = (
  * @see {@link Manager#add}.
  */
 export interface AddOptions<State, Trigger> {
-	readonly alias?: string | symbol;
+	readonly alias?: PropertyKey;
 	readonly children?: (Identifier | State)[];
 	readonly transitions?: Transition<State, Trigger>[];
 }
 
 
+export interface TriggerEventStateInfo<State> {
+	readonly state: State;
+	readonly id: number;
+	readonly alias: PropertyKey | undefined;
+}
+
+
+/** Event passed to transition `change` callbacks. */
 export interface TriggerEvent<State, Trigger> {
+	/** The trigger that caused the transition (if any). */
 	readonly trigger: Trigger | null;
-	readonly old: State;
-	readonly new: State;
+	/** Info on the old state. */
+	readonly old: TriggerEventStateInfo<State>;
+	/** Info on the new state. */
+	readonly new: TriggerEventStateInfo<State>;
 }
 
 
@@ -155,6 +163,16 @@ export class Manager<State, Trigger> {
 	 */
 	at(key: Identifier): State {
 		return this.getNode(key).state;
+	}
+
+	/**
+	 * Get the alias of a state, if any.
+	 *
+	 * @returns the state's alias.
+	 * @throws {Error} if the requested state doesn't exist.
+	 */
+	aliasAt(key: Identifier): string | symbol | undefined {
+		return this.getNode(key).alias as string | symbol | undefined;
 	}
 
 	/** Check if an alias points to a state. */
@@ -426,14 +444,8 @@ export class Manager<State, Trigger> {
 	 * @param exit an exit strategy for leaving the current state.
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
-	jump(
-		key: Identifier,
-		exit: TriggerCallback<State, Trigger>,
-		enter: TriggerCallback<State, Trigger>
-	)
-		: void
-	{
-		this._jump(key, null, exit, enter);
+	jump(key: Identifier, change: TriggerCallback<State, Trigger>): void {
+		this._jump(key, null, change);
 	}
 
 	/**
@@ -475,7 +487,7 @@ export class Manager<State, Trigger> {
 					break;
 			}
 		}
-		this._jump(nextID, trigger, transition.exit, transition.enter);
+		this._jump(nextID, trigger, transition.change);
 	}
 
 	/**
@@ -488,20 +500,26 @@ export class Manager<State, Trigger> {
 	private _jump(
 		nextID: Identifier,
 		trigger: Trigger | null,
-		exit: TriggerCallback<State, Trigger> = noop,
-		enter: TriggerCallback<State, Trigger> = noop
+		change: TriggerCallback<State, Trigger> = noop
 	)
 		: void
 	{
 		const next = this.getNode(nextID);
 		const ev = {
-			new: next.state,
-			old: this.curr.state,
+			new: {
+				state: next.state,
+				id: next.id,
+				alias: next.alias,
+			},
+			old: {
+				state: this.curr.state,
+				id: this.curr.id,
+				alias: this.curr.alias,
+			},
 			trigger: trigger,
 		};
 		this.preTrigger(ev);
-		exit(ev.old, trigger, this);
-		enter(ev.new, trigger, this);
+		change(ev, this);
 		this.postTrigger(ev);
 		this.curr = next;
 	}
