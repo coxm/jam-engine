@@ -74,16 +74,16 @@ export interface StateMethods<PreloadData, InitData> {
  * while paused (perhaps useful if action will begin immediately), and can be
  * detached while running (e.g. to run in the background).
  */
-export class State {
+export class State<PreloadData = any, InitData = any> {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
 
-	private preloaded: Promise<any> | null = null;
-	private initialised: Promise<any> | null = null;
+	private preloaded: Promise<PreloadData> | null = null;
+	private initialised: Promise<InitData> | null = null;
 	private started: Promise<void> | null = null;
 
 	protected flags: number = StateFlags.none;
 
-	constructor(options?: StateMethods<any, any>) {
+	constructor(options?: StateMethods<PreloadData, InitData>) {
 		Object.assign(this, options);
 	}
 
@@ -112,7 +112,7 @@ export class State {
 	}
 
 	/** Fetch any data required to initialise. */
-	preload(): Promise<any> {
+	preload(): Promise<PreloadData> {
 		if (this.preloaded) {
 			return this.preloaded;
 		}
@@ -143,9 +143,9 @@ export class State {
 	 * @returns a promise which resolves when the state has preloaded and
 	 * initialised.
 	 */
-	init(): Promise<any> {
+	init(): Promise<InitData> {
 		return this.initialised || (this.initialised = this.preload().then(
-			this._init.bind(this)
+			(prData: PreloadData): Promise<InitData> => this._init(prData)
 		));
 	}
 
@@ -154,7 +154,7 @@ export class State {
 	 *
 	 * Equivalent to de-initialising then initialising again.
 	 */
-	reinit(): Promise<any> {
+	reinit(): Promise<InitData> {
 		this.deinit();
 		return this.init();
 	}
@@ -201,7 +201,9 @@ export class State {
 	 * Initialises via {@link init} before starting.
 	 */
 	restart(): Promise<void> {
-		return this.started = this.init().then(this._start.bind(this));
+		return this.started = this.init().then(
+			(data: InitData) => this._start(data)
+		);
 	}
 
 	/** Stop this state. */
@@ -222,8 +224,9 @@ export class State {
 	 * @returns a promise which resolves when the state has started and been
 	 * un-paused.
 	 */
-	resume(): Promise<void> {
-		return this.start().then((): void => { this.unpause(); });
+	async resume(): Promise<void> {
+		await this.start();
+		this.unpause();
 	}
 
 	/** Pause this state. */
@@ -280,6 +283,8 @@ export class State {
 	 * Preload any assets required.
 	 *
 	 * Override this method to define this state's preloading requirements.
+	 *
+	 * @returns {PreloadData} the preload data.
 	 */
 	protected doPreload(): any {
 	}
@@ -296,8 +301,8 @@ export class State {
 	 *
 	 * @param preloadData the data obtained from {@link doPreload}.
 	 */
-	protected doInit(preloadData: any): any {
-		return preloadData;
+	protected doInit(preloadData: PreloadData): InitData {
+		return preloadData as any as InitData;
 	}
 
 	/** Un-initialise this state. */
@@ -310,7 +315,7 @@ export class State {
 	 * Override this method to provide application-specific start logic. For
 	 * example, physics/logic loops or timers might be started here.
 	 */
-	protected doStart(initData: any): void {
+	protected doStart(initData: InitData): void {
 	}
 
 	/** Stop this state. */
@@ -344,7 +349,7 @@ export class State {
 	}
 
 	/** Cause this state to initialise. */
-	private _init(preloadData: any): Promise<any> {
+	private _init(preloadData: PreloadData): Promise<InitData> {
 		const data = this.doInit(preloadData);
 		State.onEvent(StateEventType.initDone, {
 			state: this,
@@ -355,7 +360,7 @@ export class State {
 	}
 
 	/** Cause this state to start. */
-	private _start(initData: any): void {
+	private _start(initData: InitData): void {
 		if (this.isRunning) {
 			return;
 		}
