@@ -1,4 +1,4 @@
-import {FileLoader} from './FileLoader';
+import {BaseLoader} from './BaseLoader';
 
 
 /**
@@ -69,7 +69,7 @@ function fetchTextures(
 }
 
 
-export class TextureLoader extends FileLoader {
+export class TextureLoader extends BaseLoader {
 	cached(relpath: string): PIXI.Texture {
 		return PIXI.utils.TextureCache[this.expandPath(relpath)];
 	}
