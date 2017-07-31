@@ -77,15 +77,17 @@ export interface StateMethods<PreloadData, InitData> {
 export class State<PreloadData = any, InitData = any> {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
 
+	static extend<PData, IData>(methods: StateMethods<PData, IData>)
+		:	State<PData, IData>
+	{
+		return Object.assign(new State(), methods);
+	}
+
 	private preloaded: Promise<PreloadData> | null = null;
 	private initialised: Promise<InitData> | null = null;
 	private started: Promise<void> | null = null;
 
 	protected flags: number = StateFlags.none;
-
-	constructor(options?: StateMethods<PreloadData, InitData>) {
-		Object.assign(this, options);
-	}
 
 	get isPreloaded(): boolean {
 		return 0 !== (this.flags & StateFlags.preloaded);
