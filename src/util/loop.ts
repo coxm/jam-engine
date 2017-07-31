@@ -15,7 +15,7 @@ export class Loop<Context> {
 	readonly ms: number;
 	readonly ctx: Context | undefined;
 
-	private intervalID: number = 0;
+	private intervalID: any = 0;
 
 	constructor(options: LoopOptions<Context>) {
 		this.fn = options.fn;
