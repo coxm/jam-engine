@@ -61,7 +61,7 @@ export function* map<U, V>(iterable: Iterable<U>, fn: (u: U, i: number) => V)
 	:	IterableIterator<V>
 {
 	let i = -1;
-	for (let u of iterable) {
+	for (const u of iterable) {
 		yield fn(u, ++i);
 	}
 }
