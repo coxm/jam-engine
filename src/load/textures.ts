@@ -35,32 +35,20 @@ export function fetchTextures(
 )
 	: void
 {
-	function done(): void {
-		success(paths.map(path => PIXI.utils.TextureCache[path]));
-	}
-
-	let numRemaining: number = 0;
-	function onComplete(): void {
-		if (--numRemaining === 0) {
-			done();
-		}
-	}
+	const loader = new PIXI.loaders.Loader();
 
 	for (const url of paths) {
 		if (!PIXI.utils.TextureCache[url]) {
-			++numRemaining;
-			PIXI.loader.add({
-				url,
-				onComplete,
-			});
+			loader.add(url);
 		}
 	}
 
-	if (numRemaining === 0) {
-		return done();
-	}
-
-	// onError missing from definitions.
-	(<any> PIXI.loader).onError.add(failure);
-	PIXI.loader.load();
+	(<PIXI.loaders.Loader>
+		loader
+		.once('error', failure)
+		.once('complete', () => success(
+			paths.map(p => PIXI.utils.TextureCache[p])
+		))
+	)
+	.load();
 }
