@@ -370,3 +370,69 @@ describe("State#restart", () => {
 		});
 	});
 });
+
+
+describe("State#stop", (): void => {
+	let state: State;
+	let doStop: jasmine.Spy;
+
+	beforeEach((): void => {
+		state = new State();
+		doStop = spyOn(state, 'doStop');
+	});
+
+	it("doesn't call doStop if the state never started", (): void => {
+		state.stop();
+		expect(doStop).not.toHaveBeenCalled();
+	});
+	it("calls doStop", async function(done) {
+		await state.start();
+		state.stop();
+		expect(doStop).toHaveBeenCalledTimes(1);
+		done();
+	});
+});
+
+
+describe("State#deinit", (): void => {
+	let state: State;
+	let doDeinit: jasmine.Spy;
+
+	beforeEach((): void => {
+		state = new State();
+		doDeinit = spyOn(state, 'doDeinit');
+	});
+
+	it("doesn't call doDeinit if the state never started", (): void => {
+		state.deinit();
+		expect(doDeinit).not.toHaveBeenCalled();
+	});
+	it("calls doDeinit", async function(done) {
+		await state.start();
+		state.deinit();
+		expect(doDeinit).toHaveBeenCalledTimes(1);
+		done();
+	});
+});
+
+
+describe("State#unload", (): void => {
+	let state: State;
+	let doUnload: jasmine.Spy;
+
+	beforeEach((): void => {
+		state = new State();
+		doUnload = spyOn(state, 'doUnload');
+	});
+
+	it("doesn't call doUnload if the state never started", (): void => {
+		state.unload();
+		expect(doUnload).not.toHaveBeenCalled();
+	});
+	it("calls doUnload", async function(done) {
+		await state.start();
+		state.unload();
+		expect(doUnload).toHaveBeenCalledTimes(1);
+		done();
+	});
+});

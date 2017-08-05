@@ -133,8 +133,11 @@ export class State<PreloadData = any, InitData = any> {
 
 	/** Destroy any raw preloaded assets. */
 	unload(): void {
-		this.preloaded = null;
-		this.flags &= ~StateFlags.preloaded;
+		if (this.flags & StateFlags.preloaded) {
+			this.preloaded = null;
+			this.flags &= ~StateFlags.preloaded;
+			this.doUnload();
+		}
 	}
 
 	/**
