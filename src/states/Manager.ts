@@ -51,6 +51,7 @@ export interface AddOptions<State, Trigger> {
 	readonly alias?: PropertyKey;
 	readonly children?: (Identifier | State)[];
 	readonly transitions?: Transition<State, Trigger>[];
+	readonly parent?: Identifier | State;
 }
 
 
@@ -72,22 +73,31 @@ export interface TriggerEvent<State, Trigger> {
 }
 
 
+const isNode: symbol = Symbol('isNode');
+
+
 interface Node<State, Trigger> {
 	readonly id: number;
 	readonly alias: PropertyKey | undefined;
 	readonly state: State;
-	children: Identifier[];
+	children: number[];
 	transitions: Transition<State, Trigger>[];
-	parent?: Identifier;
+	parent: Identifier | undefined;
 }
 
 
 let idCounter: number = -1;
 
 
+export type CreateStateOptions<State, Trigger> = (
+	[string | symbol, State] |
+	[string | symbol, State, AddOptions<State, Trigger>]
+);
+
+
 export interface ManagerOptions<State, Trigger> {
 	readonly initial?: string | symbol;
-	readonly states?: [string | symbol, State][];
+	readonly states?: CreateStateOptions<State, Trigger>[];
 	readonly preTrigger?: (ev: TriggerEvent<State, Trigger>) => void;
 	readonly postTrigger?: (ev: TriggerEvent<State, Trigger>) => void;
 }
@@ -110,8 +120,10 @@ export class Manager<State, Trigger> {
 
 	constructor(options: ManagerOptions<State, Trigger> = {}) {
 		if (options.states) {
-			for (const [alias, state] of options.states) {
-				this.add(state, {alias: alias});
+			for (const [alias, state, stateOpts] of options.states as any) {
+				this.add(state, Object.assign({}, stateOpts, {
+					alias: alias
+				}));
 			}
 		}
 		if (options.initial) {
@@ -320,8 +332,11 @@ export class Manager<State, Trigger> {
 	 */
 	tryParent(key?: Identifier): [number, State] | null {
 		const node = key === undefined ? this.curr : this.getNode(key);
+		if (node.parent === undefined) {
+			return null;
+		}
 		const parent = this.getNode(node.parent!)!;
-		return node ? [parent.id, parent.state] : null;
+		return [parent.id, parent.state];
 	}
 
 	/**
@@ -354,6 +369,9 @@ export class Manager<State, Trigger> {
 	 */
 	add(state: State, options: AddOptions<State, Trigger> = {}): number {
 		const node = this.createNode(state, options.alias!);
+		if (options.parent !== undefined) {
+			this.doSetParent(node, options.parent);
+		}
 		if (options.hasOwnProperty('alias')) {
 			this.nodes.set(options.alias!, node);
 		}
@@ -413,6 +431,16 @@ export class Manager<State, Trigger> {
 			parent.children.push(childNode.id);
 			return childNode.id;
 		});
+	}
+
+	/**
+	 * Set the parent of a state.
+	 *
+	 * @param child the child state ID or alias.
+	 * @param parent the parent ID/alias or a new state to add.
+	 */
+	setParent(child: Identifier, parent: Identifier | State): number {
+		return this.doSetParent(this.getNode(child), parent);
 	}
 
 	/**
@@ -525,13 +553,16 @@ export class Manager<State, Trigger> {
 	}
 
 	private getOrCreateNode(arg: Identifier | State): Node<State, Trigger> {
-		return (typeof arg === 'object'
+		return typeof arg === 'object'
 			?	this.createNode(arg)
-			:	this.getNode(arg)
-		);
+			:	this.getNode(arg);
 	}
 
-	private createNode(state: State, alias?: PropertyKey)
+	private createNode(
+		state: State,
+		alias?: PropertyKey,
+		parent?: Identifier
+	)
 		: Node<State, Trigger>
 	{
 		const id = ++idCounter;
@@ -539,8 +570,10 @@ export class Manager<State, Trigger> {
 			id,
 			alias,
 			state,
+			parent: parent,
 			children: [],
 			transitions: [],
+			[isNode]: true,
 		};
 		this.nodes.set(id, node);
 		this.list.push(node);
@@ -574,5 +607,21 @@ export class Manager<State, Trigger> {
 			throw new Error(`State ${key} has no parent`);
 		}
 		return this.getNode(node.parent);
+	}
+
+	private doSetParent(
+		childNode: Node<State, Trigger>,
+		parent: Identifier | State
+	)
+		: number
+	{
+		const parentNode = this.getOrCreateNode(parent);
+		if (childNode.parent !== undefined) {
+			const children = this.getNode(childNode.parent).children;
+			children.splice(children.indexOf(childNode.id), 1);
+		}
+		parentNode.children.push(childNode.id);
+		childNode.parent = parentNode.id;
+		return parentNode.id;
 	}
 }

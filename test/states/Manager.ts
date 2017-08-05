@@ -39,7 +39,6 @@ function testChild(init: TestInitialiser): void {
 			child = obj.child;
 			parentKey = obj.parentKey;
 			childKey = obj.childKey;
-			(<any> window).o = obj;
 		});
 
 		describe("which can be accessed via", (): void => {
@@ -173,6 +172,14 @@ describe("Manager add method", (): void => {
 			};
 		});
 	});
+
+	it("can create the parent", (): void => {
+		const parent = new State();
+		const childID = manager.add(new State(), {parent});
+		const pair = manager.tryParent(childID);
+		expect(pair).toBeTruthy();
+		expect(pair![1]).toBe(parent);
+	});
 });
 
 
@@ -214,6 +221,67 @@ describe("Manager appendChild method", (): void => {
 				childKey,
 			};
 		});
+	});
+});
+
+
+describe("Manager setParent method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let child: State;
+	let parent: State;
+	let childID: number;
+
+	beforeEach((): void => {
+		manager = createManager();
+		child = new State();
+		childID = manager.add(child);
+		parent = new State();
+	});
+
+	it("throws if given an invalid ID", (): void => {
+		expect((): void => { manager.setParent(childID, 123); }).toThrow();
+	});
+	it("throws if given an invalid alias", (): void => {
+		expect((): void => { manager.setParent(childID, 'alias'); }).toThrow();
+	});
+
+	it("can create new states to set as the parent", (): void => {
+		const id = manager.setParent(childID, parent);
+		expect(manager.at(id)).toBe(parent);
+	});
+
+	describe("can set an existing state as the parent", (): void => {
+		let parentID: number;
+		const parentAlias: string = 'parent';
+		beforeEach((): void => {
+			parentID = manager.add(parent, {alias: parentAlias});
+		});
+
+		function check(): void {
+			expect(manager.tryParent(childID)).toEqual([parentID, parent]);
+			expect([...manager.children(parentID)]).toEqual(
+				[[childID, child]]);
+		}
+
+		it("if given an ID", (): void => {
+			manager.setParent(childID, parentID);
+			check();
+		});
+		it("if given an alias", (): void => {
+			manager.setParent(childID, parentAlias);
+			check();
+		});
+	});
+
+	it("removes the node from its previous parent if any", (): void => {
+		const parentID = manager.add(parent);
+		const oldParent = new State();
+		const oldParentID = manager.add(oldParent);
+		manager.setParent(childID, parentID);
+
+		expect(manager.tryParent(childID)).toEqual([parentID, parent]);
+		expect([...manager.children(parentID)]).toEqual([[childID, child]]);
+		expect([...manager.children(oldParentID)].length).toBe(0);
 	});
 });
 
