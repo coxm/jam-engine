@@ -383,11 +383,3 @@ export async function resume(state: State): Promise<void> {
 	state.attach();
 	state.resume();
 }
-
-
-/** Reset a state. */
-export const reset = (state: State): void => {
-	state.pause();
-	state.detach();
-	state.deinit();
-};
