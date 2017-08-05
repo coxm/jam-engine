@@ -27,8 +27,8 @@ export const enum StateEventType {
 }
 
 
-export interface StateEvent<T> {
-	readonly state: State;
+export interface StateEvent<T, StateT = State> {
+	readonly state: StateT;
 	readonly data?: T;
 }
 
