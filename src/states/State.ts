@@ -74,13 +74,10 @@ export interface StateMethods<PreloadData, InitData> {
  * while paused (perhaps useful if action will begin immediately), and can be
  * detached while running (e.g. to run in the background).
  */
-export class State<PreloadData = any, InitData = any> {
+export class State<PreloadData = any, InitData = PreloadData> {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
-
-	static extend<PData, IData>(methods: StateMethods<PData, IData>)
-		:	State<PData, IData>
-	{
-		return Object.assign(new State(), methods);
+	static fromHooks<P, I>(hooks: StateMethods<P, I>): State<P, I> {
+		return Object.assign(new State(), hooks);
 	}
 
 	private preloaded: Promise<PreloadData> | null = null;
