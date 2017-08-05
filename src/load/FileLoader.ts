@@ -1,6 +1,9 @@
 import {map, iterable} from 'jam/util/iterate';
 
-import {BaseLoader} from './BaseLoader';
+import {BaseLoader, BaseLoaderOptions} from './BaseLoader';
+
+
+export type FileLoaderOptions = BaseLoaderOptions;
 
 
 export class FileLoader extends BaseLoader {
