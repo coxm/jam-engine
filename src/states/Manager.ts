@@ -20,14 +20,7 @@ export interface TransitionBase<State, Trigger> {
 }
 
 
-export interface RelationTransition<State, Trigger>
-	extends TransitionBase<State, Trigger>
-{
-	/** The status of the new state in relation to the old. */
-	readonly rel: Relation;
-}
-
-
+/** A transition which explicitly identifies the next state. */
 export interface IDTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
@@ -36,9 +29,40 @@ export interface IDTransition<State, Trigger>
 }
 
 
+/** A transition which identifies a state by a relationship. */
+export interface RelationTransition<State, Trigger>
+	extends TransitionBase<State, Trigger>
+{
+	/** The relationship between the current state and the new state. */
+	readonly rel: Relation;
+}
+
+
+/** A transition which uses a function to identify the next state. */
+export interface FinderTransition<State, Trigger>
+	extends TransitionBase<State, Trigger>
+{
+	/** A function which returns an identifier for the next state. */
+	readonly find: (
+		this: FinderTransition<State, Trigger>,
+		id: number,
+		state: State,
+		manager: Manager<State, Trigger>
+	) => Identifier;
+}
+
+
 export type Transition<S, T> = (
 	RelationTransition<S, T> |
-	IDTransition<S, T>
+	IDTransition<S, T> |
+	FinderTransition<S, T>
+);
+
+
+type UnionTransition<State, Trigger> = (
+	IDTransition<State, Trigger> &
+	RelationTransition<State, Trigger> &
+	FinderTransition<State, Trigger>
 );
 
 
@@ -483,39 +507,18 @@ export class Manager<State, Trigger> {
 	 * @throws {Error} if the current state doesn't have the specified trigger.
 	 */
 	trigger(trigger: Trigger): void {
-		const transition = this.curr.transitions.find(
+		const trans = this.curr.transitions.find(
 			tr => tr.trigger === trigger
-		);
-		if (!transition) {
+		) as UnionTransition<State, Trigger>;
+		if (!trans) {
 			return this.onEmptyTransition(trigger, this.current);
 		}
-		let nextID = (<IDTransition<State, Trigger>> transition).id;
-		const rel = (transition as RelationTransition<State, Trigger>).rel;
-		if (typeof nextID !== 'number') {
-			switch (rel) {
-				case Relation.sibling:
-				case Relation.siblingElseUp: {
-					nextID = this.getNextSiblingKey(this.curr)!;
-					if (nextID === undefined) {
-						if (rel !== Relation.siblingElseUp) {
-							throw new Error("No more siblings");
-						}
-						nextID = this.curr.parent!;
-					}
-					break;
-				}
-				case Relation.parent:
-					nextID = this.curr.parent!;
-					break;
-				case Relation.child:
-					nextID = this.curr.children[0];
-					break;
-				case Relation.same:
-					nextID = this.curr.id;
-					break;
-			}
-		}
-		this._jump(nextID, trigger, transition.change);
+
+		this._jump(
+			this.getTransitionTarget(trans as UnionTransition<State, Trigger>),
+			trigger,
+			trans.change
+		);
 	}
 
 	/**
@@ -623,5 +626,44 @@ export class Manager<State, Trigger> {
 		parentNode.children.push(childNode.id);
 		childNode.parent = parentNode.id;
 		return parentNode.id;
+	}
+
+	private getTransitionTarget(trans: UnionTransition<State, Trigger>)
+		:	Identifier
+	{
+		if (trans.id !== undefined) {
+			return trans.id;
+		}
+		if (trans.find) {
+			const nextID = trans.find(this.curr.id, this.curr.state, this);
+			if (nextID === undefined) {
+				throw new Error("Unable to find transition target");
+			}
+			return nextID;
+		}
+
+		switch ((trans as RelationTransition<State, Trigger>).rel) {
+			case undefined:
+				throw new Error(
+					`Invalid transition: ${trans.trigger} from ${this.curr.id}`
+				);
+			case Relation.sibling: {
+				const nextID = this.getNextSiblingKey(this.curr);
+				if (nextID === undefined) {
+					throw new Error("No more siblings");
+				}
+				return nextID;
+			}
+			case Relation.siblingElseUp: {
+				const nextID = this.getNextSiblingKey(this.curr)!;
+				return nextID === undefined ? this.curr.parent! : nextID;
+			}
+			case Relation.parent:
+				return this.curr.parent!;
+			case Relation.child:
+				return this.curr.children[0];
+			case Relation.same:
+				return this.curr.id;
+		}
 	}
 }

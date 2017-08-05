@@ -551,4 +551,21 @@ describe("Manager trigger method", (): void => {
 			});
 		});
 	});
+
+	it("can transition via a function", (): void => {
+		const transition = {
+			trigger: Trigger.trigger1,
+			find(currentID: Identifier, current: State): Identifier {
+				return NaN;
+			},
+		};
+		const spy = spyOn(transition, 'find').and.returnValue(destID);
+		manager.addTransitions(initialID, [transition]);
+		manager.trigger(Trigger.trigger1);
+
+		expect(spy).toHaveBeenCalledTimes(1);
+		const call = spy.calls.first();
+		expect(call.object).toBe(transition);
+		expect(call.args).toEqual([initialID, initialState, manager]);
+	});
 });
