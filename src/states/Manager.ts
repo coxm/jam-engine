@@ -304,7 +304,7 @@ export class Manager<State, Trigger> {
 	 * @returns an iterable of the referred-to state's children, or if no key
 	 * is provided, the children of the current state.
 	 */
-	*children(key?: Identifier): IterableIterator<[Identifier, State]> {
+	*children(key?: Identifier): IterableIterator<[number, State]> {
 		const parent = key === undefined ? this.curr : this.getNode(key);
 		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
@@ -318,7 +318,7 @@ export class Manager<State, Trigger> {
 	 * @returns an iterable of the referred-to state's siblings, or if no key
 	 * is provided, the siblings of the current state.
 	 */
-	*siblings(key?: Identifier): IterableIterator<[Identifier, State]> {
+	*siblings(key?: Identifier): IterableIterator<[number, State]> {
 		const parent = key === undefined ? this.curr : this.getParent(key);
 		for (const id of parent.children) {
 			yield [id, this.getNode(id).state];
@@ -334,7 +334,7 @@ export class Manager<State, Trigger> {
 	 * is provided, the ancestors of the current state.
 	 */
 	*ancestors(key?: Identifier, strict: boolean = false)
-		: IterableIterator<[Identifier, State]>
+		: IterableIterator<[number, State]>
 	{
 		let node = key === undefined ? this.curr : this.getNode(key);
 		if (!strict) {

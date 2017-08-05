@@ -569,3 +569,66 @@ describe("Manager trigger method", (): void => {
 		expect(call.args).toEqual([initialID, initialState, manager]);
 	});
 });
+
+
+describe("Manager iteration method", (): void => {
+
+});
+describe("Manager children method", (): void => {
+	let manager: Manager<State, Trigger>;
+	let parent: State;
+	let parentID: number;
+	let aliases: string[];
+
+	beforeEach((): void => {
+		manager = new Manager();
+		aliases = [0, 1, 2].map(i => {
+			const alias = 'alias-' + i;
+			manager.add(new State(), {alias});
+			return alias;
+		});
+		parent = new State();
+		parentID = manager.add(parent, {
+			children: [
+				new State(),
+				manager.add(new State()),
+				aliases[0],
+			],
+		});
+		manager.appendChild(parentID, new State());
+		manager.appendChild(parentID, manager.add(new State()));
+		manager.appendChild(parentID, aliases[1]);
+		manager.appendChildren(parentID, [
+			new State(),
+			manager.add(new State()),
+			aliases[2],
+		]);
+	});
+
+	function testIterator(
+		methodName: string,
+		fn: () => IterableIterator<[number, State]>
+	)
+		: void
+	{
+		it(`${methodName} always returns IDs as identifiers`, (): void => {
+			const pairs = [...fn()];
+			expect(pairs.length).toBeGreaterThan(0);
+
+			let allNumeric = true;
+			for (let pair of pairs) {
+				if (typeof pair[0] !== 'number') {
+					allNumeric = false;
+					break;
+				}
+			}
+			expect(allNumeric).toBe(true);
+		});
+	}
+
+
+	testIterator("entries", () => manager.entries());
+	testIterator("children", () => manager.children(parentID));
+	testIterator("siblings", () => manager.siblings(aliases[0]));
+	testIterator("ancestors", () => manager.ancestors(parentID));
+});
