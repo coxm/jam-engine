@@ -7,7 +7,6 @@ const pool = new Pool<PIXI.loaders.Loader>({
 		(loader as any).removeAllListeners();
 		return loader.reset();
 	},
-	maxIdle: 3,
 });
 
 
