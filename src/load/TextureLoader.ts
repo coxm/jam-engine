@@ -12,13 +12,11 @@ export class TextureLoader extends BaseLoader {
 	}
 
 	textureAbs(abspath: string): Promise<PIXI.Texture> {
-		return loadTextures([abspath]).then(textures => textures[0]);
+		return loadTextures(abspath);
 	}
 
 	textures(...relpaths: string[]): Promise<PIXI.Texture[]> {
-		return this.texturesAbs(
-			...relpaths.map(rel => this.expandPath(rel))
-		);
+		return this.texturesAbs(...relpaths.map(rel => this.expandPath(rel)));
 	}
 
 	texturesAbs(...abspaths: string[]): Promise<PIXI.Texture[]> {

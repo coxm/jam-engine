@@ -18,15 +18,20 @@ const pool = new Pool<PIXI.loaders.Loader>({
  * @param paths the array of texture paths.
  * @returns a promise which resolves with the loaded textures.
  */
-export const loadTextures = (paths: string[], baseUrl: string = '')
-	: Promise<PIXI.Texture[]> =>
-{
+export const loadTextures: {
+	(path: string, baseUrl?: string): Promise<PIXI.Texture>;
+	(paths: string[], baseUrl?: string): Promise<PIXI.Texture[]>;
+} = (requested: string|string[], baseUrl: string = ''): Promise<any> => {
 	const loader = pool.get();
 	loader.baseUrl = baseUrl;
-	loader.add(paths);
+	loader.add(requested);
 	return new Promise((resolve, reject): void => {
 		(loader.on('error', reject) as PIXI.loaders.Loader).load((): void => {
-			resolve(paths.map(p => PIXI.utils.TextureCache[p]));
+			resolve(
+				typeof requested === 'string'
+					?	PIXI.utils.TextureCache[requested]
+					:	requested.map(p => PIXI.utils.TextureCache[p])
+			);
 		});
 	});
 };
