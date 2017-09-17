@@ -26,6 +26,8 @@ export interface SplashOptions {
 
 /** Splash screen state. */
 export class Splash extends State<SpriteLike, PIXI.Sprite> {
+	loadTexture: (path: string) => Promise<PIXI.Texture>;
+
 	readonly image: SplashImage;
 	readonly onStart: (sprite: PIXI.Sprite) => void;
 	readonly onStop: (sprite: PIXI.Sprite) => void;
@@ -53,8 +55,7 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 	protected doPreload(): SpriteLike | Promise<SpriteLike> {
 		switch (typeof this.image) {
 			case 'string':
-				return loadTextures([this.image as string]).then(
-					([texture]) => texture);
+				return this.loadTexture(this.image as string);
 			case 'object':
 				if (this.image instanceof HTMLImageElement) {
 					return new PIXI.Texture(new PIXI.BaseTexture(this.image));
@@ -101,3 +102,4 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 		this.onStop(this.sprite!);
 	}
 }
+Splash.prototype.loadTexture = loadTextures;
