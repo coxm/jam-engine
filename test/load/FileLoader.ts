@@ -6,7 +6,7 @@ const baseUrl: string = 'test-base-url';
 
 function testFileLoader(testName: string, options: {
 	loader: () => FileLoader;
-	suffix: string;
+	defaultExtension: string;
 })
 	: void
 {
@@ -23,7 +23,7 @@ function testFileLoader(testName: string, options: {
 			const fileContents: string = 'file contents';
 			const basename: string = 'somefile';
 			const filename: string =
-				[baseUrl, '/', basename, options.suffix].join('');
+				[baseUrl, '/', basename, options.defaultExtension].join('');
 
 			beforeEach((): void => {
 				const fakeResponse = {
@@ -68,7 +68,7 @@ function testFileLoader(testName: string, options: {
 			};
 			const basename: string = 'somefile';
 			const filename: string =
-				[baseUrl, '/', basename, options.suffix].join('');
+				[baseUrl, '/', basename, options.defaultExtension].join('');
 
 			beforeEach((): void => {
 				const fakeResponse = {
@@ -112,18 +112,18 @@ function testFileLoader(testName: string, options: {
 
 
 describe("FileLoader", (): void => {
-	testFileLoader("initialised without suffix", {
+	testFileLoader("initialised without defaultExtension", {
 		loader: () => new FileLoader({
 			baseUrl: baseUrl,
 		}),
-		suffix: '',
+		defaultExtension: '',
 	});
 
-	testFileLoader("initialised with '.txt' suffix", {
+	testFileLoader("initialised with '.txt' defaultExtension", {
 		loader: () => new FileLoader({
 			baseUrl: baseUrl,
-			suffix: '.txt',
+			defaultExtension: '.txt',
 		}),
-		suffix: '.txt',
+		defaultExtension: '.txt',
 	});
 });
