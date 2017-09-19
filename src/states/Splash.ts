@@ -76,11 +76,12 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 	}
 
 	protected doInit(img: SpriteLike): PIXI.Sprite {
-		return img instanceof PIXI.Sprite ? img : new PIXI.Sprite(img);
+		return this.sprite =
+			img instanceof PIXI.Sprite ? img : new PIXI.Sprite(img);
 	}
 
 	protected doStart(sprite: PIXI.Sprite): PIXI.Sprite {
-		this.onStart(this.sprite = sprite);
+		this.onStart(sprite);
 		const delay = this.autoStop;
 		if (delay) {
 			const stop = () => this.stop();
