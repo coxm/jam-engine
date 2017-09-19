@@ -374,12 +374,3 @@ export class State<PreloadData = any, InitData = PreloadData> {
 		this.flags |= StateFlags.running;
 	}
 }
-
-
-/** Resume a state which may be uninitialised, paused, and/or detached. */
-export async function resume(state: State): Promise<void> {
-	await state.init();
-	state.pause();
-	state.attach();
-	state.resume();
-}
