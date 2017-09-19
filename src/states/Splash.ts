@@ -32,7 +32,8 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 	readonly onStart: (sprite: PIXI.Sprite) => void;
 	readonly onStop: (sprite: PIXI.Sprite) => void;
 	readonly autoStop: null | Promise<void> | (() => Promise<void>);
-	private sprite: PIXI.Sprite | null;
+
+	protected sprite: PIXI.Sprite | null;
 
 	/**
 	 * Construct a splash screen state.
