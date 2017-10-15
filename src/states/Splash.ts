@@ -24,6 +24,20 @@ export interface SplashOptions {
 }
 
 
+export const validateImage = (image: SplashImage): void => {
+	const type = typeof image;
+	if (image) {
+		switch (type) {
+			case 'string':
+			case 'object':
+			case 'function':
+				return;
+		}
+	}
+	throw new Error(`Invalid image (type ${type})`);
+};
+
+
 /** Splash screen state. */
 export class Splash extends State<SpriteLike, PIXI.Sprite> {
 	loadTexture: (path: string) => Promise<PIXI.Texture>;
@@ -45,6 +59,7 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 	 * which will stop this splash on resolving.
 	 */
 	constructor(image: SplashImage, options: SplashOptions = {}) {
+		validateImage(image);
 		super();
 		this.image = image;
 		this.sprite = null;
