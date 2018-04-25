@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"target": "esnext",
+		"outDir": "build/js",
+		"strict": false,
+		"sourceMap": false,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"forceConsistentCasingInFileNames": true,
+		"noFallthroughCasesInSwitch": false,
+		"noImplicitAny": true,
+		"noImplicitThis": true,
+		"noImplicitUseStrict": true,
+		"noUnusedLocals": true,
+		"strictNullChecks": true,
+		"noImplicitReturns": true,
+		"noEmitOnError": true,
+		"newLine": "LF",
+		"pretty": true,
+		"removeComments": false,
+		"preserveConstEnums": true,
+		"declaration": false,
+		"paths": {
+			"jam/*": ["src/*"]
+		}
+	},
+	"files": [
+		"src/defs.d.ts",
+		"src/index.ts"
+	]
+}

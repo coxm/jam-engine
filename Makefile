@@ -38,7 +38,7 @@ all: js tests
 
 .PHONY: js
 js:
-	$(ts_compiler_bin) -p config/lib.tsconfig.json
+	$(ts_compiler_bin) -p tsconfig.json
 
 
 .PHONY: tests

@@ -1,5 +1,11 @@
+import {
+	Shape, Circle, Particle, Plane, Convex, Line, Box, Capsule, Heightfield,
+	ShapeOptions, BoxOptions,
+} from 'p2';
+
+
 /**
- * Enumerated {@link p2.Shape} types.
+ * Enumerated {@link Shape} types.
  */
 export const enum ShapeType {
 	circle = 1,
@@ -13,30 +19,50 @@ export const enum ShapeType {
 }
 
 
+export interface P2BoxOptions extends BoxOptions {
+	collisionGroup?: number;
+	collisionResponse?: boolean;
+	collisionMask?: number;
+	sensor?: boolean;
+}
+
+
+export type ShapeConstructor = (
+	{new(options: ShapeOptions): Shape;} |
+	{new(options: P2BoxOptions): Box;}
+);
+
+
+export interface ShapeConverter {
+	type: ShapeType;
+	cls: ShapeConstructor;
+}
+
+
 /**
- * Conversion dict for obtaining {@link p2.Shape} types.
+ * Conversion dict for obtaining {@link Shape} types.
  */
 export const convert: {
-	[key: string]: {type: number; cls: typeof p2.Shape;};
-	[key: number]: {type: number; cls: typeof p2.Shape;};
+	[key: string]: ShapeConverter;
+	[key: number]: ShapeConverter;
 } = {
-	CIRCLE: {type: ShapeType.circle, cls: p2.Circle},
-	PARTICLE: {type: ShapeType.particle, cls: p2.Particle},
-	PLANE: {type: ShapeType.plane, cls: p2.Plane},
-	CONVEX: {type: ShapeType.convex, cls: p2.Convex},
-	LINE: {type: ShapeType.line, cls: p2.Line},
-	BOX: {type: ShapeType.box, cls: p2.Box},
-	CAPSULE: {type: ShapeType.capsule, cls: p2.Capsule},
-	HEIGHTFIELD: {type: ShapeType.heightfield, cls: p2.Heightfield},
+	CIRCLE: {type: ShapeType.circle, cls: Circle},
+	PARTICLE: {type: ShapeType.particle, cls: Particle},
+	PLANE: {type: ShapeType.plane, cls: Plane},
+	CONVEX: {type: ShapeType.convex, cls: Convex},
+	LINE: {type: ShapeType.line, cls: Line},
+	BOX: {type: ShapeType.box, cls: Box},
+	CAPSULE: {type: ShapeType.capsule, cls: Capsule},
+	HEIGHTFIELD: {type: ShapeType.heightfield, cls: Heightfield},
 }
 for (const key in convert) {
-	convert[key.toLowerCase()] = convert[(p2.Shape as any)[key]] =
+	convert[key.toLowerCase()] = convert[(Shape as any)[key]] =
 		convert[key];
 }
 
 
 /**
- * Generalised {@link p2.ShapeDef} which allows string types, groups and masks.
+ * Generalised {@link ShapeOptions} which allows string types, groups & masks.
  */
 export interface ShapeDef {
 	readonly type: number | string;
@@ -47,6 +73,14 @@ export interface ShapeDef {
 	readonly collisionResponse?: boolean;
 	readonly sensor?: boolean;
 }
+
+
+/** Any definition valid for shape creation. */
+export type AnyShapeDef = (
+	ShapeDef |
+	(ShapeOptions & {type: number|string;}) |
+	(P2BoxOptions & {type: 'box'|ShapeType.box;})
+);
 
 
 /**
@@ -96,7 +130,7 @@ export const parseCollisionMask = (
 
 
 /**
- * Convenience function for creating {@link p2.Shape} instances
+ * Convenience function for creating {@link Shape} instances
  *
  * Allows definitions to refer to shape types, collision groups and collision
  * masks by name as well as by their enumeration.
@@ -135,11 +169,11 @@ export const parseCollisionMask = (
  * });
  */
 export const create = (
-	def: ShapeDef | p2.ShapeOptions,
+	def: AnyShapeDef,
 	collisionGroups?: {[key: string]: number;},
 	collisionMasks?: {[key: string]: number;},
 )
-	: p2.Shape =>
+	: Shape =>
 {
 	if (collisionGroups) {
 		def = Object.assign({}, def);
@@ -154,5 +188,9 @@ export const create = (
 			);
 		}
 	}
-	return new convert[def.type!].cls(def as p2.ShapeOptions);
+	const ctor = convert[def.type!];
+	if (!ctor) {
+		throw new Error(`Invalid type: ${def.type}`);
+	}
+	return new (ctor as any)!(def);
 };

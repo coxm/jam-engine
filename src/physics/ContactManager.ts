@@ -1,17 +1,38 @@
+import {World, Body, Shape} from 'p2';
+
 import {noop} from 'jam/util/misc';
 import {pair} from 'jam/util/pairing';
 import {cancellable, CancellableIterator} from 'jam/util/iterate';
 
 
+export interface P2BeginContactEvent {
+	type: string;
+	shapeA: Shape;
+	shapeB: Shape;
+	bodyA: Body;
+	bodyB: Body;
+	contactEquations: p2.ContactEquation[];
+}
+
+
+export interface P2EndContactEvent {
+	type: string;
+	shapeA: Shape;
+	shapeB: Shape;
+	bodyA: Body;
+	bodyB: Body;
+}
+
+
 export type P2ContactEvent = (
-	p2.BeginContactEvent |
-	p2.EndContactEvent
+	P2BeginContactEvent |
+	P2EndContactEvent
 );
 
 
 export interface ShapeContactInfo {
-	readonly shape: p2.Shape;
-	readonly body: p2.Body;
+	readonly shape: Shape;
+	readonly body: Body;
 }
 
 
@@ -46,7 +67,7 @@ export class ContactManager {
 	private beginIter: EventIterator | null = null;
 	private endIter: EventIterator | null = null;
 
-	private world: p2.World | null = null;
+	private world: World | null = null;
 
 	constructor(public readonly options: ContactManagerOptions) {
 		if (!options.onNormalContact) {
@@ -61,7 +82,7 @@ export class ContactManager {
 		return !!this.world;
 	}
 
-	install(world: p2.World): void {
+	install(world: World): void {
 		if (this.world) {
 			throw new Error(
 				"ContactManager can only be installed to one world at a time");
@@ -113,14 +134,14 @@ export class ContactManager {
 		};
 	}
 
-	protected onContactBegin(ev: p2.BeginContactEvent): void {
+	protected onContactBegin(ev: P2BeginContactEvent): void {
 		const key = pair(ev.shapeA.id, ev.shapeB.id);
 		if (!this.known.has(key)) {
 			this.begin.set(key, ev);
 		}
 	}
 
-	protected onContactEnd(ev: p2.EndContactEvent): void {
+	protected onContactEnd(ev: P2EndContactEvent): void {
 		const key = pair(ev.shapeA.id, ev.shapeB.id);
 		this.begin.delete(key);
 		this.end.set(key, ev);

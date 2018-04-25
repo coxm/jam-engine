@@ -1,8 +1,10 @@
+import {Body} from 'p2';
+
 import {create as createShape, ShapeDef} from './shape';
 
 
 /**
- * Enumerated {@link p2.Body} types.
+ * Enumerated {@link Body} types.
  */
 export const enum BodyType {
 	dynamic = 1,
@@ -12,11 +14,11 @@ export const enum BodyType {
 
 
 /**
- * Conversion dict for obtaining {@link p2.Body} types.
+ * Conversion dict for obtaining {@link Body} types.
  */
 export const convert: {
-	[key: string]: number;
-	[key: number]: number;
+	[key: string]: BodyType;
+	[key: number]: BodyType;
 } = {
 	DYNAMIC: BodyType.dynamic,
 	KINEMATIC: BodyType.kinematic,
@@ -26,41 +28,41 @@ export const convert: {
 	kinematic: BodyType.kinematic,
 	static: BodyType.static,
 
-	[p2.Body.DYNAMIC]: BodyType.dynamic,
-	[p2.Body.KINEMATIC]: BodyType.kinematic,
-	[p2.Body.STATIC]: BodyType.static,
+	[Body.DYNAMIC]: BodyType.dynamic,
+	[Body.KINEMATIC]: BodyType.kinematic,
+	[Body.STATIC]: BodyType.static,
 };
 
 
-export interface BodyDef {
+export interface BodyDef<Vec2T = AnyVec2> {
 	readonly type: number | string;
 	readonly mass?: number;
-	readonly position?: AnyVec2;
-	readonly velocity?: AnyVec2;
+	readonly position?: Vec2T;
+	readonly velocity?: Vec2T;
 	readonly angle?: number;
 	readonly angularVelocity?: number;
-	readonly force?: AnyVec2;
+	readonly force?: Vec2T;
 	readonly angularForce?: number;
 	readonly fixedRotation?: boolean;
-	readonly shapes?: (p2.ShapeOptions | ShapeDef)[];
+	readonly shapes?: ReadonlyArray<ShapeDef>;
 }
 
 
 /**
- * Convenience function for creating {@link p2.Body} instances with shapes.
+ * Convenience function for creating {@link Body} instances with shapes.
  */
 export const create = (
 	def: BodyDef,
 	collisionGroups?: {[key: string]: number;},
 	collisionMasks?: {[key: string]: number;}
 )
-	: p2.Body =>
+	: Body =>
 {
 	const bodyType = convert[def.type!];
 	if (typeof bodyType !== 'number') {
 		throw new Error(`Invalid body type: '${def.type}'`);
 	}
-	const body = new p2.Body(Object.assign({}, def, {
+	const body = new Body(Object.assign({}, def as BodyDef<AllVec2>, {
 		type: bodyType,
 	}));
 	if (def.shapes) {

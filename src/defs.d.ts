@@ -6,3 +6,6 @@ type AnyVec2 = (
 	number[] |
 	Float32Array
 );
+
+
+type AllVec2 = [number, number] & number[] & Float32Array;
