@@ -13,7 +13,7 @@ import {Manager, Event} from 'jam/events/Manager';
  */
 export type Category = (
 	'SomeEvent' |
-	'AntherEvent'
+	'AnotherEvent'
 );
 
 
@@ -64,38 +64,44 @@ manager
 // # Batching handlers.
 // Batches can be initialised using the `Manager#batch` method, and removed
 // using the `Manager#unbatch` method.
-const batchID = manager.batch([  // Initialise a batch.
-	['SomeEvent', handler],  // Context `context`.
-	[
-		'SomeEvent',
-		handler,
-		{whatami: 'A different context'}  // Different context (optional).
-	]
-	// ...
-], {ctx: context});
-// Remove the entire batch, e.g. when ending a level:
-manager.unbatch(batchID);
+{
+	const batchID = manager.batch([  // Initialise a batch.
+		['SomeEvent', handler],  // Context `context`.
+		[
+			'SomeEvent',
+			handler,
+			{  // Different context (optional).
+				context: {whatami: 'A different context'},
+			}
+		]
+		// ...
+	], {context});
+	// Remove the entire batch, e.g. when ending a level:
+	manager.unbatch(batchID);
+}
 
 
 // # Extending handler batches.
 // Batches can be created with a specific ID, and extended after creation.
-const batchID = Symbol('MyHandlerBatch');
-manager.batch(  // Creates the batch with ID `batchID`.
-	[
-		['SomeEvent', handler]
-	],
-	{
-		ctx: context,
-		id: batchID
-	}
-);
-manager.batch(  // Extends the same batch with more event handlers.
-	[
-		['AnotherEvent', handler]
-	],
-	{
-		id: batchID
-	}
-);
-// Removes both handlers.
-manager.unbatch(batchID);
+{
+	const batchID = Symbol('MyHandlerBatch');
+	manager.batch(  // Creates the batch with ID `batchID`.
+		[
+			['SomeEvent', handler]
+		],
+		{
+			context,
+			id: batchID
+		}
+	);
+	manager.batch(  // Extends the same batch with more event handlers.
+		[
+			['AnotherEvent', handler]
+		],
+		{
+			id: batchID
+		}
+	);
+	// Removes both handlers.
+	manager.unbatch(batchID);
+}

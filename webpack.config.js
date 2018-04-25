@@ -10,7 +10,11 @@ const PORT = process.env.PORT || '3000';
 const HOST = process.env.HOST || 'localhost';
 
 
-const entry = [path.resolve(__dirname, 'src/index.ts')];
+const entry = [
+  path.resolve(__dirname, 'src/index.ts'),
+  path.resolve(__dirname, 'test/index.ts'),
+  path.resolve(__dirname, 'docs/index.ts'),
+];
 if (!IS_PROD) {
   entry.unshift(
     `webpack-dev-server/client?http://${HOST}:${PORT}`);
@@ -38,7 +42,6 @@ module.exports = {
       {
         test: /\.(d\.)?ts$/,
         use: [{loader: 'awesome-typescript-loader'}],
-        include: path.join(__dirname, 'src'),
       },
       {
         test: /\.(sass|scss)$/i,

@@ -12,11 +12,9 @@ function testFileLoader(testName: string, options: {
 {
 	describe(testName, (): void => {
 		let loader: FileLoader = <any> null;
-		let importCount: number = 0;
 
 		beforeEach((): void => {
 			loader = options.loader();
-			importCount = 0;
 		});
 
 		describe("loads text files", () => {

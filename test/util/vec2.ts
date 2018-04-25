@@ -1,8 +1,4 @@
-import {
-	dist,
-	angleOfLine,
-}
-from 'jam/util/vec2';
+import {dist, angleOfLine} from 'jam/util/vec2';
 
 
 function pimult(n: number): string {

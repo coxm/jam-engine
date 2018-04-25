@@ -1,6 +1,8 @@
-import {FileLoader} from 'jam/load/FileLoader';
-
 import {ActorDef, PartialActorDef, mergeActorDefs} from './Actor';
+
+
+type PartialDefLoader = (relpath: string) =>
+	PartialActorDef | Promise<PartialActorDef>;
 
 
 /**
@@ -10,12 +12,15 @@ import {ActorDef, PartialActorDef, mergeActorDefs} from './Actor';
  * assemble definitions from {@link PartialActorDef}s with dependencies.
  *
  * If definitions are often loaded recursively, it is recommended to subclass
- * and cache the {@link Loader#json} method.
+ * and cache the {@link Loader} method.
  */
-export class Loader extends FileLoader {
-	actorDef(relpath: string): Promise<ActorDef> {
-		return this.json<ActorDef>(relpath).then(
-			this.fromPartialDef.bind(this));
+export class Loader {
+	constructor(protected loadDef: PartialDefLoader) {
+	}
+
+	async actorDef(relpath: string): Promise<ActorDef> {
+		const def = await this.loadDef(relpath);
+		return this.fromPartialDef(def);
 	}
 
 	fromPartialDef(root: PartialActorDef): Promise<ActorDef> {

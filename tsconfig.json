@@ -24,9 +24,5 @@
 		"paths": {
 			"jam/*": ["src/*"]
 		}
-	},
-	"files": [
-		"src/defs.d.ts",
-		"src/index.ts"
-	]
+	}
 }

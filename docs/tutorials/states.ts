@@ -23,15 +23,23 @@
  * 5.  While playing a level, the player can quit the game and return to the
  *     main menu.
  */
-import {State, resume, reset} from 'jam/states/State';
+import {State} from 'jam/states/State';
+import {Splash} from 'jam/states/Splash';
 import {Relation} from 'jam/states/Relation';
-import {Manager, TriggerEvent} from 'jam/states/Manager';
+import {Manager, TriggerEvent, Transition} from 'jam/states/Manager';
 
-// These are all fictitious states imagined for the purpose of this example. We
-// assume they all extend the `State` class.
-import {Level} from 'my-game/states/Level';
-import {SplashScreen} from 'my-game/states/Level';
-import {MainMenu} from 'my-game/states/MainMenu';
+
+/** A fictitious Level class. */
+class Level extends State {
+	constructor(readonly id: string) {
+		super();
+	}
+}
+
+
+/** A fictitious MainMenu class. */
+class MainMenu extends State {
+}
 
 
 /**
@@ -55,46 +63,49 @@ export const enum Trigger {
  * define below.
  */
 export const manager = new Manager<State, Trigger>({
-	// This function gets called before `manager` acts on any trigger. It
-	// pauses, detaches and stops the old state.
+	// This function gets called before `manager` acts on any trigger.
 	preTrigger: (event: TriggerEvent<State, Trigger>): void => {
-		reset(event.old)
-		console.log('Closing state', event.old.name);
+		console.log('Closing state', event.old.id);
 	},
-	// This function gets called after `manager` acts on any trigger. It
-	// starts up/resumes the new state.
+	// This function gets called after `manager` acts on any trigger.
 	postTrigger: (event: TriggerEvent<State, Trigger>): void => {
-		resume(event.new);
-		console.log('Started state', event.new.name);
+		console.log('Started state', event.new.id);
 	},
 });
 
 
-const startFirstLevelOnPlayGame: Transition<Trigger, State> = {
+const startFirstLevelOnPlayGame: Transition<State, Trigger> = {
 	trigger: Trigger.playGame,
-	exit(mainMenu: MainMenu): void {
-		mainMenu.detach();  // Keep the main menu alive, but in the background.
+	change(ev: TriggerEvent<State, Trigger>): void {
+		ev.old.state.detach();  // Keep the main menu alive in the background.
+		ev.new.state.start();
 	},
 	rel: Relation.child,  // Start this (main menu) state's first child.
 };
 
-const restartOnLevelFailure: Transition<Trigger, State> = {
+const restartOnLevelFailure: Transition<State, Trigger> = {
 	trigger: Trigger.levelFailed,
-	exit: reset,  // Reset the current level on failure.
+	change(ev: TriggerEvent<State, Trigger>): void {
+		console.assert(ev.new.state === ev.old.state);
+		ev.old.state.restart();  // Reset the current state on failure.
+	},
 	rel: Relation.same,  // Specify the same state with a `Relation`.
 };
 
-const advanceOnLevelSuccess: Transition<Trigger, State> = {
+const advanceOnLevelSuccess: Transition<State, Trigger> = {
 	trigger: Trigger.levelComplete,
-	exit(level: Level): void {
-		level.destroy();  // Destroy the level as we no longer need it.
+	change(ev: TriggerEvent<State, Trigger>): void {
+		ev.old.state.destroy();  // Destroy the level as we no longer need it.
+		ev.new.state.start();
 	},
 	rel: Relation.sibling,  // Move to the next sibling state.
 };
 
-const returnToMainMenu: Transition<Trigger, State> = {
+const returnToMainMenu: Transition<State, Trigger> = {
 	trigger: Trigger.returnToMainMenu,
-	exit: reset,
+	change(ev: TriggerEvent<State, Trigger>): void {
+		ev.old.state.pause();  // Pause the level while we're in the menu.
+	},
 	id: 'MainMenu',  // Specify the main menu state.
 };
 
@@ -120,7 +131,7 @@ const mainMenuID = manager.add(new MainMenu(), {
 			transitions: [
 				restartOnLevelFailure,
 				advanceOnLevelSuccess,
-				returnToMainMenuOnQuit,
+				returnToMainMenu,
 			],
 		}),
 		manager.add(new Level('level-1'), {
@@ -128,11 +139,11 @@ const mainMenuID = manager.add(new MainMenu(), {
 			transitions: [
 				restartOnLevelFailure,
 				advanceOnLevelSuccess,
-				returnToMainMenuOnQuit,
+				returnToMainMenu,
 			],
 		}),
-		manager.add(new SplashScreen('GameComplete.png'))
+		manager.add(new Splash('GameComplete.png'))
 	],
 });
-manager.set(mainMenuID);  // Set the initial state.
-resume(manager.current);  // Start the main menu state.
+manager.setInitial(mainMenuID);  // Set the initial state.
+manager.current.start(); // Start the main menu state.

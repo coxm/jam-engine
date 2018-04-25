@@ -24,13 +24,15 @@ export interface HealthDef extends ComponentDef {
 
 /** A simple health component. */
 export class Health implements Component {
-	private readonly maxHealth: number;
+	readonly maxHealth: number;
 	private value: number;
 
 	constructor(def: HealthDef) {
 		this.maxHealth = def.maxHealth;
 		this.value = def.initialHealth;
 	}
+
+	get key(): string { return 'health'; }
 
 	onAdd(actor: Actor): void {}  // Put on-add logic here if necessary.
 	onRemove(actor: Actor): void {}  // Put on-remove logic here if necessary.
@@ -53,8 +55,11 @@ export interface WeaponDef extends ComponentDef {
 /** A simple weapon component. */
 export class Weapon implements Component {
 	readonly damage: number;
-	private readonly image: string;
-	constructor(def: HealthDef) {
+	readonly image: string;
+
+	get key(): string { return 'weapon'; }
+
+	constructor(def: WeaponDef) {
 		this.image = def.image;
 		this.damage = def.damage;
 	}
@@ -82,104 +87,93 @@ factory.setCmpFactories({
 // # Simple actor creation.
 // Once the factory is configured, it can be used to create actors from
 // definitions.
-const myActor = factory.create({
-	alias: 'MyActor',
-	position: [0, 0],
-	cmp: [
-		{  // The health definition.
-			factory: 'health',
-			maxHealth: 100,
-			initialHealth: 50,
-		},
-		{  // The weapon definition.
-			factory: 'weapon',
-			damage: 20,
-			image: 'Bullet.png',
-		}
-	]
-});
+export function createActorSimple(): Actor {
+	const healthDef: HealthDef = {
+		factory: 'health',
+		maxHealth: 100,
+		initialHealth: 50,
+	};
+	const weaponDef: WeaponDef = {
+		factory: 'weapon',
+		damage: 20,
+		image: 'Bullet.png',
+	};
+	const actor = factory.actor({
+		alias: 'MyActor',
+		position: [0, 0],
+		cmp: [healthDef, weaponDef],
+	});
+	console.assert((actor.cmp.health as Health).maxHealth === 100);
+	console.assert((actor.cmp.weapon as Weapon).damage === 20);
+	console.assert((actor.cmp.weapon as Weapon).image === 'Bullet.png');
+	return actor;
+}
 
 
 // # Actor definition merging.
 // For more complex games, actors are likely to share traits, such as 'has a
 // particlar gun' or 'starts with 100 health'. We can specify dependencies on
 // other definitions for convenience.
-const hasHealth: PartialActorDef = {
-	cmp: [{
-		factory: 'health',
-		maxHealth: 100,
-		initialHealth: 50,
-	}],
-};
-const hasRevolver: PartialActorDef = {
-	cmp: [{
-		factory: 'weapon',
-		damage: 20,
-		image: 'Bullet.png',
-	}],
-};
-const hasLaserGun: PartialActorDef = {
-	cmp: [{
-		factory: 'weapon',
-		damage: 40,
-		image: 'Laser.png',
-	}],
-};
-
-/** A bad guy, with health and a revolver. */
-const badGuy1 = factory.create(mergeActorDefs(hasHealth, hasRevolver, {
-	alias: 'BadGuy1',
-	position: [100, 0],
-}));
-/** Another bad guy, with health and a laser gun. */
-const badGuy2 = factory.create(mergeActorDefs(hasHealth, hasLaserGun, {
-	alias: 'BadGuy2',
-	position: [100, 0],
-}));
-
-
-// # Actor loading.
-// The Actor loader is equipped to deal with such recursive definitions,
-// allowing us to define an actor schema and create instances of it easily.
-export const loader = new Loader({
-	baseUrl: 'my-game-assets/actors',
-});
-
-// File `my-game-assets/actors/HasHealth.json`:
-{
-	"cmp": [{
-		"factory": "health",
-		"maxHealth": 100,
-		"initialHealth": 50
-	}]
-}
-
-// File `my-game-assets/actors/HasRevolver.json`:
-{
-	"cmp": [{
-		"factory": "weapon",
-		"damage": 20,
-		"image": "Bullet.png"
-	}]
-}
-
-// File `my-game-assets/actors/BadGuy1.json`:
-{
-	"alias": "BadGuy1",
-	"position": [100, 0],
-	"depends": ["HasHealth", "HasRevolver"]
-}
-
-// In code:
-loader
-	.actorDef('BadGuy1')  // Loads the above files and merges them together.
-	.then(def => factory.create(def));
-
-// Alternatively:
-loader
-	.fromPartialDef({  // Allows specifying of a partial definition in code.
+const defs: {[filepath: string]: PartialActorDef;} = {
+	hasHealth: {
+		"cmp": [{
+			"factory": "health",
+			"maxHealth": 100,
+			"initialHealth": 50
+		} as HealthDef],
+	},
+	hasWeapon: {
+		"cmp": [{
+			"factory": "weapon",
+			"damage": 20,
+			"image": "Bullet.png"
+		} as WeaponDef],
+	},
+	badGuy: {
 		"alias": "BadGuy1",
 		"position": [100, 0],
-		"depends": ["HasHealth", "HasRevolver"]
-	})
-	.then(def => factory.create(def));
+		"depends": ["HasHealth", "HasRevolver"],
+	},
+};
+
+
+// We can then explicitly merge the definitions together.
+export function createBadGuys(): Actor[] {
+	return [
+		// A bad guy, with health and a revolver.
+		factory.actor(mergeActorDefs([defs.hasHealth, defs.hasRevolver], {
+			alias: 'BadGuy1',
+			position: [100, 0],
+		})),
+		// Another bad guy, with health and a laser gun.
+		factory.actor(mergeActorDefs([defs.hasHealth, defs.hasLaserGun], {
+			alias: 'BadGuy2',
+			position: [100, 0],
+		})),
+	];
+}
+
+
+// Or we can use a loader to merge definitions automatically.
+export async function createBadGuys2(): Promise<Actor[]> {
+	const loader = new Loader(
+		(name: string) => defs[name]! // Could also return a promise.
+	);
+
+	// Load the 'BadGuy1' definition and construct the actor.
+	const badGuy1 = await loader
+		.actorDef('BadGuy')
+		.then(def => factory.actor(def));
+	console.assert(Object.keys(badGuy1.cmp).length === 2);
+
+	// Alternatively, we can pass the root definition as an object.
+	const badGuy2 = await loader
+		.fromPartialDef({
+			"alias": "BadGuy2",
+			"position": [100, 0],
+			"depends": ["HasHealth", "HasRevolver"],
+		})
+		.then(def => factory.actor(def));
+	console.assert(Object.keys(badGuy2.cmp).length === 2);
+	return [badGuy1, badGuy2];
+}

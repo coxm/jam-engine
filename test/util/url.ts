@@ -3,7 +3,7 @@ import * as url from 'jam/util/url';
 
 describe("extensionRegex", (): void => {
 	it("can identify file extensions", (): void => {
-		const cases = {
+		const cases: any = {
 			'somefile.txt': '.txt',
 			'http://site/file.blend': '.blend',
 			'some/path/to/an/image.png': '.png',
@@ -18,7 +18,7 @@ describe("extensionRegex", (): void => {
 	});
 
 	it("excludes URLs without an extension", (): void => {
-		const cases = [
+		const cases: any = [
 			'somefile',
 			'http://site/file',
 			'some/path/to/an/image',
@@ -33,7 +33,7 @@ describe("extensionRegex", (): void => {
 
 describe("protocolRegex", (): void => {
 	it("can identify protocols", (): void => {
-		const cases = {
+		const cases: any = {
 			'http://something.com/article': 'http',
 			'file:///home/user/some/file.txt': 'file',
 		};
@@ -46,7 +46,7 @@ describe("protocolRegex", (): void => {
 	});
 
 	it("excludes URLs without a protocol", (): void => {
-		const cases = [
+		const cases: any = [
 			'somefile.txt',
 			'http://site/file',
 			'some/path/to/an/image.jpg',
@@ -61,7 +61,7 @@ describe("protocolRegex", (): void => {
 
 describe("isAbsolute function", (): void => {
 	it("correctly identifies URLs", (): void => {
-		const paths = {
+		const paths: any = {
 			'somefile.txt': false,
 			'http://site/file.blend': true,
 			'some/path/to/an/image.png': false,

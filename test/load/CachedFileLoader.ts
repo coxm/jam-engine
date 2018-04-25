@@ -31,13 +31,13 @@ describe("CachedFileLoader", (): void => {
 			});
 
 			it(`loads ${name} the first time`, (done) => {
-				loader[name](relpath).then((result) => {
+				(loader as any)[name](relpath).then((result: any) => {
 					expect(result).toBe(expectedResult);
 					done();
 				});
 			});
 			it("uses cached values in subsequent calls", async function(done) {
-				const result = await loader[name](relpath);
+				const result = await (loader as any)[name](relpath);
 				expect(result).toBe(expectedResult);
 				fetchSpy.and.returnValue(null);
 
@@ -45,13 +45,14 @@ describe("CachedFileLoader", (): void => {
 				const newFetched: any = await fetch(relpath);
 				expect(newFetched).toBe(null);
 
-				const subsequent = await loader[name](relpath);
+				const subsequent = await (loader as any)[name](relpath);
 				expect(subsequent).toBe(expectedResult);
 				done();
 			});
 			it("uses values from the cache if possible", async function(done) {
 				loader.cache.set(relpath, expectedResult);
-				expect(await loader[name](relpath)).toBe(expectedResult);
+				expect(await (loader as any)[name](relpath))
+					.toBe(expectedResult);
 				done();
 			});
 		});

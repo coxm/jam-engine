@@ -3,13 +3,12 @@ import {Loader} from 'jam/actors/Loader';
 
 
 describe("Actor Loader", (): void => {
-	const baseUrl: string = 'baseUrl';
-	let loader: Loader = <any> null;
+	let loader: Loader;
+	let loadDefSpy: jasmine.Spy;
 
 	beforeEach((): void => {
-		loader = new Loader({
-			baseUrl: baseUrl,
-		});
+		loadDefSpy = jasmine.createSpy();
+		loader = new Loader(loadDefSpy);
 	});
 
 	describe("actorDef method", (): void => {
@@ -24,17 +23,17 @@ describe("Actor Loader", (): void => {
 		});
 
 		it("loads the JSON file of the same name", (done): void => {
-			spyOn(loader, 'json').and.returnValue(Promise.resolve(root));
+			loadDefSpy.and.returnValue(Promise.resolve(root));
 			loader.actorDef(relpath).then(
 				(): void => {
-					expect(loader.json).toHaveBeenCalledWith(relpath);
+					expect(loadDefSpy).toHaveBeenCalledWith(relpath);
 					done();
 				},
 				fail
 			);
 		});
 		it("returns the loaded JSON if no dependencies", (done): void => {
-			spyOn(loader, 'json').and.returnValue(Promise.resolve(root));
+			loadDefSpy.and.returnValue(Promise.resolve(root));
 			loader.actorDef(relpath).then(
 				(def: ActorDef): void => {
 					expect(def).toBe(root as ActorDef);
@@ -97,7 +96,7 @@ describe("Actor Loader", (): void => {
 					},
 				};
 
-				spyOn(loader, 'json').and.callFake(
+				loadDefSpy.and.callFake(
 					(rel: string): Promise<PartialActorDef> =>
 						Promise.resolve(files[rel])
 				);

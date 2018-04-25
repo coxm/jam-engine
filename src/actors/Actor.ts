@@ -107,7 +107,7 @@ export type PartialActorDef = Partial<ActorDef>;
  */
 export function mergeActorDefs(
 	defs: Iterable<PartialActorDef>,
-	base?: ActorDef
+	base?: PartialActorDef
 )
 	: ActorDef
 {
