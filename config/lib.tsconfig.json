@@ -29,7 +29,6 @@
 		}
 	},
 	"files": [
-		"../typings/globals/pixi.js/index.d.ts",
 		"../defs/lib.d.ts",
 		"../defs/p2.d.ts"
 	],

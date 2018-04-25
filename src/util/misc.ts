@@ -110,53 +110,15 @@ export interface Dict<V> {
 export type DictKey = string | number | symbol;
 
 
-export function dictMap<U, V>(
-	func: (val: U, key: DictKey) => V,
-	input: Dict<U> | U[],
-	out: Dict<V> = {}
+export function dictMap<InVal, OutVal, Out extends Object & Dict<OutVal>>(
+	out: Out,
+	input: Dict<InVal> | InVal[],
+	func: (val: InVal, key: DictKey) => OutVal
 )
-	:	Dict<V>
+	:	Out & Dict<OutVal>
 {
 	for (const key in input) {
 		out[key] = func(input[key], key);
-	}
-	return out;
-}
-
-
-export interface DictKeyValueMapper<U, V> {
-	(inputValue: U, inputKey: DictKey): [V, DictKey];
-}
-
-
-export function dictMapKV<U, V>(
-	func: DictKeyValueMapper<U, V>,
-	input: Dict<U> | U[],
-	out: Dict<V> = {}
-)
-	: Dict<V>
-{
-	for (const key in input) {
-		const [v, k] = func(input[key], key);
-		out[k] = v;
-	}
-	return out;
-}
-
-
-export function dictExclude<U, V>(
-	func: (input: U, key: DictKey) => V,
-	exclude: V,
-	input: Dict<U>,
-	out: Dict<V> = {}
-)
-	: Dict<V>
-{
-	for (const key in input) {
-		const result = func(input[key], key);
-		if (result !== exclude) {
-			out[key] = result;
-		}
 	}
 	return out;
 }

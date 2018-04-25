@@ -34,10 +34,10 @@ export function animations(def: SpriteSheetDef)
 	}
 {
 	return dictMap(
+		{},
+		def.animations,
 		(anim: AnimationDef) => animation(
-			def.texture, anim, def.frameWidth, def.frameHeight
-		),
-		def.animations
+			def.texture, anim, def.frameWidth, def.frameHeight)
 	);
 }
 

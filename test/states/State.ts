@@ -1,4 +1,4 @@
-import {State, StateEventType} from 'jam/states/State';
+import {State as State, StateEventType} from 'jam/states/State';
 
 
 function neverResolve(): Promise<any> {
@@ -16,7 +16,7 @@ describe("state event", (): void => {
 		const testName: string = "is fired when a state starts preloading";
 		it(testName, (done): void => {
 			const state = new State();
-			spyOn(state, 'doPreload').and.returnValue(neverResolve());
+			spyOn(state, 'doPreload' as any).and.returnValue(neverResolve());
 			state.preload();
 			expect(onEvent).toHaveBeenCalledTimes(1);
 			expect(onEvent.calls.mostRecent().args).toEqual([
@@ -42,7 +42,7 @@ describe("state event", (): void => {
 		const testNameA: string = "isn't fired prematurely";
 		it(testNameA, (done): void => {
 			const state = new State();
-			spyOn(state, 'doPreload').and.returnValue(neverResolve());
+			spyOn(state, 'doPreload' as any).and.returnValue(neverResolve());
 			state.preload();
 			setTimeout((): void => {
 				// The preloadBegin event will still be fired, though.
@@ -58,7 +58,7 @@ describe("state event", (): void => {
 		it(testNameB, (done): void => {
 			const preloadData = {fake: 'data'};
 			const state = new State();
-			spyOn(state, 'doPreload').and.returnValue(
+			spyOn(state, 'doPreload' as any).and.returnValue(
 				Promise.resolve(preloadData)
 			);
 			state.preload().then((): void => {
@@ -80,7 +80,7 @@ describe("state event", (): void => {
 		});
 
 		it("isn't fired until the state is preloaded", (done): void => {
-			spyOn(state, 'doPreload').and.returnValue(neverResolve());
+			spyOn(state, 'doPreload' as any).and.returnValue(neverResolve());
 			state.init();
 			setTimeout((): void => {
 				expect(onEvent).toHaveBeenCalledTimes(1);
@@ -92,7 +92,7 @@ describe("state event", (): void => {
 		});
 		it("is fired when the state is initialised", (done) => {
 			const initData = {init: 'data'};
-			spyOn(state, 'doInit').and.returnValue(initData);
+			spyOn(state, 'doInit' as any).and.returnValue(initData);
 
 			state.init().then((): void => {
 				expect(onEvent).toHaveBeenCalled();
@@ -235,7 +235,7 @@ describe("State#preload", (): void => {
 
 	it("loads the data if unloaded", (done): void => {
 		const preloadData = {preload: 'data'};
-		const spy = spyOn(state, 'doPreload').and.returnValue(preloadData);
+		const spy = spyOn(state, 'doPreload' as any).and.returnValue(preloadData);
 		state.preload().then((data: any): void => {
 			expect(spy).toHaveBeenCalledTimes(1);
 			expect(data).toBe(preloadData);
@@ -243,7 +243,7 @@ describe("State#preload", (): void => {
 		});
 	});
 	it("doesn't re-load data if already loaded", (done): void => {
-		const spy = spyOn(state, 'doPreload').and.callThrough();
+		const spy = spyOn(state, 'doPreload' as any).and.callThrough();
 		Promise.all([
 			state.preload(),
 			state.preload()
@@ -261,11 +261,11 @@ describe("State#init", (): void => {
 
 	beforeEach((): void => {
 		state = new State();
-		doInit = spyOn(state, 'doInit');
+		doInit = spyOn(state, 'doInit' as any);
 	});
 
 	it("doesn't call doInit before preload completes", (done): void => {
-		spyOn(state, 'doPreload').and.returnValue(neverResolve());
+		spyOn(state, 'doPreload' as any).and.returnValue(neverResolve());
 		state.init();
 		setTimeout((): void => {
 			expect(doInit).not.toHaveBeenCalled();
@@ -293,7 +293,7 @@ describe("State#start", (): void => {
 
 	beforeEach((): void => {
 		state = new State();
-		doStart = spyOn(state, 'doStart');
+		doStart = spyOn(state, 'doStart' as any);
 	});
 
 	it(
@@ -355,7 +355,7 @@ describe("State#restart", () => {
 	});
 	it("doesn't start the state if running", (done) => {
 		state.start().then((): void => {
-			const doStart = spyOn(state, 'doStart');
+			const doStart = spyOn(state, 'doStart' as any);
 			state.restart().then((): void => {
 				expect(doStart).not.toHaveBeenCalled();
 				done();
@@ -378,7 +378,7 @@ describe("State#stop", (): void => {
 
 	beforeEach((): void => {
 		state = new State();
-		doStop = spyOn(state, 'doStop');
+		doStop = spyOn(state, 'doStop' as any);
 	});
 
 	it("doesn't call doStop if the state never started", (): void => {
@@ -400,7 +400,7 @@ describe("State#deinit", (): void => {
 
 	beforeEach((): void => {
 		state = new State();
-		doDeinit = spyOn(state, 'doDeinit');
+		doDeinit = spyOn(state, 'doDeinit' as any);
 	});
 
 	it("doesn't call doDeinit if the state never started", (): void => {
@@ -422,7 +422,7 @@ describe("State#unload", (): void => {
 
 	beforeEach((): void => {
 		state = new State();
-		doUnload = spyOn(state, 'doUnload');
+		doUnload = spyOn(state, 'doUnload' as any);
 	});
 
 	it("doesn't call doUnload if the state never started", (): void => {

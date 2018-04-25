@@ -83,19 +83,19 @@ function testChild(init: TestInitialiser): void {
 		});
 		describe("whose parent can be accessed via", (): void => {
 			it("tryParent", (): void => {
-				expect(manager.tryParent(childKey)).toEqual([
+				expect(manager.tryParent(childKey)!).toEqual([
 					parentKey,
 					parent
-				]);
+				] as [number, State]);
 			});
 			it("ancestors", (): void => {
 				expect([...manager.ancestors(childKey)]).toEqual([
-					[childKey, child],
-					[parentKey, parent]
+					[childKey, child] as [number, State],
+					[parentKey, parent] as [number, State]
 				]);
 
 				expect([...manager.ancestors(childKey, true)]).toEqual([
-					[parentKey, parent]
+					[parentKey, parent] as [number, State]
 				]);
 			});
 		});
@@ -447,7 +447,7 @@ describe("Manager trigger method", (): void => {
 	}
 
 	it("calls onEmptyTransition if no such transition exists", (): void => {
-		const spy = spyOn(manager, 'onEmptyTransition');
+		const spy = spyOn(manager as any, 'onEmptyTransition');
 		manager.trigger(Trigger.trigger1);
 		expect(spy).toHaveBeenCalledWith(Trigger.trigger1, initialState);
 	});

@@ -11,8 +11,8 @@ function hyphenateArgs(args: IArguments): string {
 
 
 class Dummy {
-	storeGetter_cache: Store;
-	storePropertyName_cache: Store;
+	storeGetter_cache: Store | undefined;
+	storePropertyName_cache: Store | undefined;
 
 	uncached(a: number, b: number): {value: number;} {
 		return {value: a + b};
@@ -141,7 +141,7 @@ describe("cache decorator", (): void => {
 		});
 		it("caches results in the provided store", (): void => {
 			dummy.storePropertyName(1, 2);
-			expect(dummy.storePropertyName_cache.get('1-2')).toEqual({
+			expect(dummy.storePropertyName_cache!.get('1-2')!).toEqual({
 				value: 3
 			});
 		});

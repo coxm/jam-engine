@@ -19,6 +19,8 @@
   "author": "coxm",
   "license": "GPL-3.0",
   "devDependencies": {
+    "@types/jasmine": "^2.8.6",
+    "@types/pixi.js": "^4.7.2",
     "@types/systemjs": "0.19.33",
     "jasmine-core": "2.5.2",
     "karma": "1.5.0",

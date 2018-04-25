@@ -37,7 +37,7 @@ describe("Actor Loader", (): void => {
 			spyOn(loader, 'json').and.returnValue(Promise.resolve(root));
 			loader.actorDef(relpath).then(
 				(def: ActorDef): void => {
-					expect(def).toBe(root);
+					expect(def).toBe(root as ActorDef);
 					done();
 				},
 				fail

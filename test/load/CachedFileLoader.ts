@@ -42,7 +42,7 @@ describe("CachedFileLoader", (): void => {
 				fetchSpy.and.returnValue(null);
 
 				// Sanity check.
-				const newFetched = await fetch(relpath);
+				const newFetched: any = await fetch(relpath);
 				expect(newFetched).toBe(null);
 
 				const subsequent = await loader[name](relpath);
