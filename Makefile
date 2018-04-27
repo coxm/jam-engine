@@ -27,7 +27,7 @@ typings_bin=node_modules/typings/dist/bin.js
 
 
 define karma_start
-$(karma_bin) start config/karma.conf.js
+$(karma_bin) start karma.conf.js
 endef
 
 
