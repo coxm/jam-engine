@@ -284,7 +284,7 @@ describe("Event manager", (): void => {
 		});
 		it("fails silently if the id is invalid", (): void => {
 			expect((): void => {
-				manager.unbatch(Symbol('Not a valid ID'));
+				manager.unbatch('Not a valid ID');
 			}).not.toThrow();
 		});
 	});

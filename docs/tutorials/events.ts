@@ -84,7 +84,7 @@ manager
 // # Extending handler batches.
 // Batches can be created with a specific ID, and extended after creation.
 {
-	const batchID = Symbol('MyHandlerBatch');
+	const batchID = 'MyHandlerBatch';
 	manager.batch(  // Creates the batch with ID `batchID`.
 		[
 			['SomeEvent', handler]
