@@ -16,10 +16,17 @@ export interface Driver {
 }
 
 
+let counter: number = -1;
+
+
 /** A controller component which moves an actor according to keyboard input. */
 export abstract class KeyboardControl extends ComponentBase {
-	/** The event batching ID. */
-	private readonly eventsID: symbol = Symbol('KeyboardControl');
+	constructor(
+		readonly actorID: number,
+		private readonly eventsID = `KeyboardControl${++counter}`
+	) {
+		super(actorID);
+	}
 
 	abstract getDriver(actor: Actor): Driver;
 

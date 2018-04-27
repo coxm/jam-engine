@@ -19,7 +19,7 @@ export class Animated extends ComponentBase {
 
 	private current: PIXI.extras.MovieClip;
 
-	constructor(def: AnimatedDef, actorID: symbol) {
+	constructor(def: AnimatedDef, actorID: number) {
 		super(actorID);
 		this.anims = animations(def);
 		let initial: any = def.initial;

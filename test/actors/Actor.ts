@@ -63,7 +63,7 @@ describe("mergeActorDefs", (): void => {
 
 
 describe("Actor", (): void => {
-	const actorID = Symbol('actor-id');
+	const actorID = 79;
 
 	describe("constructor", (): void => {
 		let def: ActorDef = <any> null;

@@ -25,7 +25,7 @@ export interface HandlerOptions {
 
 
 export interface BatchDefaults extends HandlerOptions {
-	readonly id?: symbol;
+	readonly id?: number | string;
 }
 
 
@@ -61,11 +61,14 @@ interface HandlerInfo {
 
 
 interface BatchedHandlerInfo extends HandlerInfo {
-	bat: symbol;
+	bat: number | string;
 }
 
 
 type CategoryHandlers = Map<string, HandlerInfo>;
+
+
+let batchCounter: number = -1;
 
 
 /**
@@ -150,7 +153,7 @@ type CategoryHandlers = Map<string, HandlerInfo>;
  *
  * @example <caption>Extending batches</caption>
  * const manager = new Manager<string, any>();
- * const batchID = Symbol('MyHandlerBatch');
+ * const batchID = 'MyHandlerBatch';
  * const handler = (event) => { console.log(event.type, 'happened!'); };
  * manager.batch([
  *     ['SomeEvent', handler],
@@ -174,11 +177,11 @@ export class Manager<Category, Data> {
 	private handlers: Map<Category, CategoryHandlers>;
 
 	/**
-	 * Related handlers, batched together by a unique symbol.
+	 * Related handlers, batched together by a unique identifier.
 	 *
 	 * @see {@link Manager#batch}.
 	 */
-	private batches: Map<symbol, HandlerInfo[]>;
+	private batches: Map<number | string, HandlerInfo[]>;
 
 	private metadata: (category: Category, data: Data) => any;
 
@@ -259,13 +262,14 @@ export class Manager<Category, Data> {
 	 * handlers involved.
 	 */
 	batch(items: HandlerItem<Category, Data>[], defaults?: BatchDefaults)
-		: symbol
+		: number | string
 	{
 		defaults = Object.assign({
 			limit: Infinity,
 			context: null,
 		}, defaults);
-		const batchID: symbol = defaults!.id || Symbol();
+		const batchID =
+			defaults.id === undefined ? ++batchCounter : defaults.id;
 
 		let batched: HandlerInfo[] | undefined = this.batches.get(batchID);
 		if (!batched) {
@@ -293,7 +297,7 @@ export class Manager<Category, Data> {
 	 *
 	 * @param id - the ID returned when the batch was created.
 	 */
-	unbatch(id: symbol): this {
+	unbatch(id: number | string): this {
 		const batched: HandlerInfo[] | undefined = this.batches.get(id);
 		if (batched !== undefined) {
 			for (const info of batched) {
@@ -309,7 +313,7 @@ export class Manager<Category, Data> {
 	 *
 	 * @param id - the ID returned when the batch was created.
 	 */
-	hasBatch(id: symbol): boolean {
+	hasBatch(id: number | string): boolean {
 		return this.batches.has(id);
 	}
 

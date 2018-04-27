@@ -29,7 +29,7 @@ export interface Component {
  * `onAdd` and `onRemove` methods.
  */
 export class ComponentBase {
-	constructor(public readonly actorID: symbol) {
+	constructor(public readonly actorID: number) {
 	}
 
 	onAdd(actor: Actor): void {
@@ -143,7 +143,7 @@ export function mergeActorDefs(
 export class Actor {
 	readonly cmp: { [key: string]: Component; } = {};
 	readonly alias: string|undefined;
-	readonly id: symbol;
+	readonly id: number;
 
 	private initialised: { [id: string]: boolean; } = {};
 
@@ -156,7 +156,7 @@ export class Actor {
 	 * @param init (default: `true`) whether to initialise the Actor.
 	 */
 	constructor(
-		id: symbol,
+		id: number,
 		def: ActorDef,
 		cmp: { [id: string]: Component; },
 		init?: boolean

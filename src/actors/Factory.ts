@@ -7,7 +7,7 @@ export interface ComponentFactory {
 	 * @param actorID - the unique ID of the owning Actor.
 	 * @param actorDef - the owning actor's definition.
 	 */
-	(cmpDef: ComponentDef, actorID: symbol, actorDef: ActorDef): Component;
+	(cmpDef: ComponentDef, actorID: number, actorDef: ActorDef): Component;
 }
 
 
@@ -18,7 +18,7 @@ export interface ComponentFactory {
  */
 export class Factory<ActorType> {
 	private cmpFactories: Map<string, ComponentFactory> = new Map();
-	private counter: number = 0;
+	private numActors: number = 0;
 
 	/**
 	 * Function used to create ActorType instances.
@@ -27,7 +27,7 @@ export class Factory<ActorType> {
 	 * provide custom actor types, or add event hooks.
 	 */
 	create(
-		actorID: symbol,
+		actorID: number,
 		def: ActorDef,
 		components: { [id: string]: Component; },
 		init: boolean
@@ -56,12 +56,19 @@ export class Factory<ActorType> {
 		return this;
 	}
 
+	/** Get a new Actor ID. */
+	getNewID(): number {
+		return this.numActors;
+	}
+
+	/** Get the number of actors created by this Factory. */
+	get count(): number {
+		return this.numActors;
+	}
+
 	/** Create an actor from a definition. */
 	actor(def: ActorDef, init: boolean = true): ActorType {
-		const actorID: symbol = Symbol(
-			def.alias ? this.counter + ':' + def.alias : this.counter
-		);
-
+		const actorID: number = this.getNewID();
 		const components: { [id: string]: Component; } = {};
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
@@ -73,11 +80,11 @@ export class Factory<ActorType> {
 			components[key] = cmp;
 		}
 
-		++this.counter;
+		++this.numActors;
 		return this.create(actorID, def, components, init);
 	}
 
-	component(cmpDef: ComponentDef, actorID: symbol, actorDef: ActorDef)
+	component(cmpDef: ComponentDef, actorID: number, actorDef: ActorDef)
 		:	Component
 	{
 		const factory: ComponentFactory|undefined =
