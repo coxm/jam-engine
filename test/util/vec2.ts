@@ -36,10 +36,7 @@ describe("angleOfLine", (): void => {
 			it(`(${i}) (${src})->(${dest}) as ${pimult(angle)}`, (): void => {
 				const returned = angleOfLine(src, dest);
 				const exp = expect(returned);
-				exp.toBe(
-					angle,
-					`Expected ${pimult(returned)} to be ${pimult(angle)}`
-				);
+				exp.toBe(angle);
 			});
 		});
 	});

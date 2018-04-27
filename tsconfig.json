@@ -24,5 +24,9 @@
 		"paths": {
 			"jam/*": ["src/*"]
 		}
-	}
+	},
+	"types": [
+		"p2",
+		"pixi.js"
+	]
 }

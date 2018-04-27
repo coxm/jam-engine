@@ -14,8 +14,6 @@ const HOST = process.env.HOST || 'localhost';
 
 const entry = {
   lib: path.resolve(__dirname, 'src/index.ts'),
-  test: path.resolve(__dirname, 'test/index.ts'),
-  docs: path.resolve(__dirname, 'docs/index.ts'),
 };
 if (IS_DEV) {
   entry.serve = `webpack-dev-server/client?http://${HOST}:${PORT}`;
@@ -26,14 +24,13 @@ const output = {
   path: path.join(__dirname, 'build'),
   filename: '[name].js',
 };
-if (IS_TESTING) {
+if (IS_PROD) {
   output.library = 'jam-engine';
   output.libraryTarget = 'umd';
   output.umdNamedDefine = true;
 }
 
 
-console.log('Mode', IS_PROD ? 'production' : 'development');
 module.exports = {
   mode: IS_PROD ? 'production' : 'development',
   target: 'web',

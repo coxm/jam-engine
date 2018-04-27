@@ -30,9 +30,9 @@ describe("convert dict", (): void => {
 			['heightfield', 'HEIGHTFIELD', p2.Shape.HEIGHTFIELD]
 		];
 		for (let [lower, upper, type] of checks) {
-			expect(mod.convert[lower].type).toBe(type, lower);
-			expect(mod.convert[upper].type).toBe(type, lower);
-			expect(mod.convert[type].type).toBe(type, lower);
+			expect(mod.convert[lower].type).toBe(type);
+			expect(mod.convert[upper].type).toBe(type);
+			expect(mod.convert[type].type).toBe(type);
 		}
 	});
 
@@ -49,9 +49,9 @@ describe("convert dict", (): void => {
 				p2.Heightfield],
 		];
 		for (let [lower, upper, type, cls] of checks) {
-			expect(mod.convert[lower].cls).toBe(cls, lower);
-			expect(mod.convert[upper].cls).toBe(cls, lower);
-			expect(mod.convert[type].cls).toBe(cls, lower);
+			expect(mod.convert[lower].cls).toBe(cls);
+			expect(mod.convert[upper].cls).toBe(cls);
+			expect(mod.convert[type].cls).toBe(cls);
 		}
 	});
 });

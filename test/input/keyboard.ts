@@ -15,7 +15,7 @@ describe("isDown", (): void => {
 			}
 		}
 
-		expect(error).toBeFalsy(error);
+		expect(error).toBeFalsy();
 	});
 
 	it("indicates exactly the pressed key as down", (): void => {
@@ -27,7 +27,7 @@ describe("isDown", (): void => {
 				error = `Expected isDown(${i}) to be ${expectation}`;
 				break;
 			}
-			expect(error).toBeFalsy(error);
+			expect(error).toBeFalsy();
 		}
 	});
 
@@ -45,7 +45,7 @@ describe("isDown", (): void => {
 				error = `Expected isDown(${i} to be ${expectation}`;
 				break;
 			}
-			expect(error).toBeFalsy(error);
+			expect(error).toBeFalsy();
 		}
 	});
 
@@ -58,7 +58,7 @@ describe("isDown", (): void => {
 				error = `Expected isDown(${i}) to be false`;
 				break;
 			}
-			expect(error).toBeFalsy(error);
+			expect(error).toBeFalsy();
 		}
 	});
 
