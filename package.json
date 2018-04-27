@@ -10,7 +10,7 @@
   "scripts": {
     "start": "NODE_ENV=development node ./devserver.js",
     "build": "NODE_ENV=production webpack --config webpack.config.js",
-    "test": "NODE_ENV=testing karma start karma.conf.js"
+    "test": "NODE_ENV=testing jest"
   },
   "keywords": [
     "game",
@@ -21,26 +21,34 @@
   "license": "GPL-3.0",
   "devDependencies": {
     "@types/jasmine": "^2.8.6",
+    "@types/jest": "^22.2.3",
+    "@types/p2": "^0.7.31",
     "@types/pixi.js": "^4.7.3",
     "@types/systemjs": "0.19.33",
-    "jasmine-core": "2.5.2",
-    "karma": "1.5.0",
-    "karma-chrome-launcher": "^2.0.0",
-    "karma-coverage": "^1.1.1",
-    "karma-jasmine": "^1.1.0",
-    "karma-systemjs": "^0.16.0",
-    "karma-typescript": "^3.0.12",
-    "karma-webpack": "^3.0.0",
-    "typescript": "^2.4.1",
-    "typings": "1.3.2"
-  },
-  "dependencies": {
-    "@types/p2": "^0.7.31",
     "awesome-typescript-loader": "^5.0.0",
-    "p2": "^0.7.1",
-    "pixi.js": "4.3.4",
-    "systemjs": "^0.19.41",
+    "jasmine-core": "2.5.2",
+    "jest": "^22.4.3",
+    "ts-jest": "^22.4.4",
+    "typescript": "^2.4.1",
     "webpack": "^4.6.0",
     "webpack-dev-server": "^3.1.3"
+  },
+  "dependencies": {
+    "p2": "^0.7.1",
+    "pixi.js": "4.3.4"
+  },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/test/.*\\.ts)",
+    "moduleNameMapper": {
+      "jam/(.*)": "<rootDir>/src/$1.ts"
+    },
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
   }
 }
