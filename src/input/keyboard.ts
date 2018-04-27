@@ -1,7 +1,5 @@
 import {Event, Manager as EventManager, Handler} from 'jam/events/Manager';
 
-import {KeyCode} from './KeyCode';
-
 
 /** Interface for the data transmitted with keyboard events. */
 export interface KeyEventData {
@@ -11,46 +9,66 @@ export interface KeyEventData {
 
 
 /** Type alias for keyboard events. */
-export type KeyEvent = Event<KeyCode, KeyEventData>;
+export type KeyEvent = Event<string, KeyEventData>;
 
 
 /** Type alias for key event handling function. */
-export type KeyHandler = Handler<KeyCode, KeyEventData>;
+export type KeyHandler = Handler<string, KeyEventData>;
 
 
 /** Key down state, by event key code. */
-const keysDown = new Int32Array(8);
+const keysDown: {[key: string]: boolean;} = {};
 
 
 /**
  * Set the key-down state of a key.
  *
- * @param keyCode the key's numeric code.
+ * @param key the key being pressed.
  * @param down whether the key should be set to down (true) or up (false).
  * @returns true iff the value changed.
  */
-export function setKeyDown(keyCode: KeyCode | number, down: boolean): boolean {
-	const index: number = (keyCode / 32) | 0;
-	const mask: number = 1 << ((keyCode % 32));
-	const old: number = keysDown[index];
-	// Bithack: `w = (w & ~m) | (-f & m);` from
-	// https://graphics.stanford.edu/~seander/bithacks.html
-	return old !== (keysDown[index] = (old & ~mask) | (-down & mask));
+export function setKeyDown(key: number | string, down: boolean): boolean {
+	const wasDown = !!keysDown[key];
+	keysDown[key] = down;
+	return wasDown !== down;
 }
 
 
 /** Check if a key is down. */
-export function isDown(keyCode: KeyCode | number): boolean {
-	return !!(keysDown[(keyCode / 32) | 0] & (1 << (keyCode % 32)));
+export function isDown(key: string | number): boolean {
+	return keysDown[key];
 }
 
 
 /** The keydown event manager. */
-export const keydown = new EventManager<KeyCode | PropertyKey, KeyEventData>();
+export const keydown = new EventManager<string | number, KeyEventData>();
 
 
 /** The keyup event manager. */
-export const keyup = new EventManager<KeyCode | PropertyKey, KeyEventData>();
+export const keyup = new EventManager<string | number, KeyEventData>();
+
+
+/**
+ * A function which converts a keyboard event into a number/string identifier.
+ *
+ * Should return `undefined` when the event should be ignored.
+ */
+export type EventCondenser =
+	(ev: KeyboardEvent) => string | number | undefined;
+
+
+/**
+ * Default EventCondenser function.
+ *
+ * @note requires browser support for `KeybaordEvent#key`.
+ */
+export const defaultCondenser: EventCondenser =
+	(ev: KeyboardEvent): string => ev.key;
+
+
+/** An EventCondenser function returning event key codes. */
+export const keyCodeCondenser: EventCondenser =
+	(ev: KeyboardEvent): number => ev.keyCode;
 
 
 /**
@@ -60,15 +78,15 @@ export const keyup = new EventManager<KeyCode | PropertyKey, KeyEventData>();
  * for several seconds, a single keydown event will be fired.
  */
 export function onKeyEvent(
-	events: EventManager<KeyCode, KeyEventData>,
-	condense: (keyCode: KeyCode) => number,
+	events: EventManager<string | number, KeyEventData>,
+	condense: EventCondenser,
 	state: boolean,
 	event: KeyboardEvent
 )
 	: void
 {
-	const code: number = condense ? condense(event.keyCode) : event.keyCode;
-	if (code === +code && setKeyDown(code, state)) {
+	const code = condense(event);
+	if (code !== undefined && setKeyDown(code, state)) {
 		events.fire(code, {
 			originalEvent: event,
 			isDown: state,
@@ -87,8 +105,9 @@ const allKeyEvents = new WeakMap<HTMLElement | Document, {
  * Initialise key event listening for the entire document.
  *
  * @param condense an optional KeyCode condensing function. If provided,
- * key codes for which `condense` returns `undefined` will be ignored. Other
- * key codes will trigger events under the return value.
+ * key events for which `condense` returns `undefined` will be ignored. Other
+ * key events will be forwarded by the manager under the key returned by
+ * `condense`.
  *
  * @example
  * initKeyEvents((keyCode) => {
@@ -102,7 +121,7 @@ const allKeyEvents = new WeakMap<HTMLElement | Document, {
  */
 export function initKeyEvents(
 	target?: HTMLElement | Document | undefined | null,
-	condense?: (kc: KeyCode) => number
+	condense: EventCondenser = defaultCondenser
 )
 	: void
 {
@@ -121,8 +140,7 @@ export function initKeyEvents(
  * Remove key event handlers set by {@link initKeyEvents}.
  */
 export function stopKeyEvents(
-	target?: HTMLElement | Document | undefined | null,
-	condense?: (kc: KeyCode) => number
+	target?: HTMLElement | Document | undefined | null
 )
 	: void
 {
