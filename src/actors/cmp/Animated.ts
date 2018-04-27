@@ -12,8 +12,6 @@ export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
 
 
 export class Animated extends ComponentBase {
-	key: string;
-
 	private readonly anims: {
 		[id: string]: PIXI.extras.MovieClip;
 		[id: number]: PIXI.extras.MovieClip;

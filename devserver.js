@@ -14,7 +14,7 @@ const HOST = process.env.HOST || 'localhost';
 
 const serverConfig = {
   contentBase: [
-		'lib',
+    'lib',
     ROOT_DIR,
   ],
   hot: false,
@@ -32,3 +32,13 @@ server.listen(PORT, HOST, (err, result) => {
     console.log('Development server listening at %s:%d', HOST, PORT);
   }
 });
+
+
+module.exports = {
+  webpackConfig: config,
+  ROOT_DIR,
+  IS_PROD,
+  PORT,
+  HOST,
+  server,
+};

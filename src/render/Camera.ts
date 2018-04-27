@@ -18,8 +18,8 @@ export class Camera {
 		rendererHeight: number,
 		readonly stage: PIXI.Container = new PIXI.Container()
 	) {
-		this.width = rendererWidth;
-		this.height = rendererHeight;
+		this.hw = 0.5 * rendererWidth;
+		this.hh = 0.5 * rendererHeight;
 	}
 
 	/** Get the width of this camera. */

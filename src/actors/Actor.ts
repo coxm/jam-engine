@@ -15,12 +15,6 @@ export interface ComponentDef {
 
 /** The base interface for a component object. */
 export interface Component {
-	/**
-	 * The key under which this component is stored in an Actor.
-	 *
-	 * The component will be accessible via `actor.cmp[key]`.
-	 */
-	readonly key: string;
 	/** Add this component to an actor. */
 	onAdd(actor: Actor): void;
 	/** Remove this component from an actor. */
@@ -35,8 +29,6 @@ export interface Component {
  * `onAdd` and `onRemove` methods.
  */
 export class ComponentBase {
-	key: string;
-
 	constructor(public readonly actorID: symbol) {
 	}
 
@@ -184,8 +176,7 @@ export class Actor {
 	 * @param init whether to initialise the component.
 	 * @throws Error if a component of the same key already exists.
 	 */
-	setCmp(cmp: Component, init: boolean = true): void {
-		const key = cmp.key;
+	setCmp(key: string, cmp: Component, init: boolean = true): void {
 		if (this.cmp[key]) {
 			throw new Error("Component exists: " + key);
 		}

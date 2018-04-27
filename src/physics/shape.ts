@@ -27,15 +27,18 @@ export interface P2BoxOptions extends BoxOptions {
 }
 
 
-export type ShapeConstructor = (
-	{new(options: ShapeOptions): Shape;} |
-	{new(options: P2BoxOptions): Box;}
-);
+export interface ShapeConstructor {
+	new(options: ShapeOptions): Shape;
+}
+export interface BoxConstructor {
+	new(options: P2BoxOptions): Box;
+}
+export type AnyShapeConstructor = ShapeConstructor | BoxConstructor;
 
 
 export interface ShapeConverter {
 	type: ShapeType;
-	cls: ShapeConstructor;
+	cls: AnyShapeConstructor;
 }
 
 
@@ -188,9 +191,9 @@ export const create = (
 			);
 		}
 	}
-	const ctor = convert[def.type!];
-	if (!ctor) {
+	const converter: ShapeConverter = convert[def.type!];
+	if (!converter) {
 		throw new Error(`Invalid type: ${def.type}`);
 	}
-	return new (ctor as any)!(def);
+	return new (converter.cls as any)(def);
 };

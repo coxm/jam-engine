@@ -100,7 +100,6 @@ describe("Actor", (): void => {
 
 		function component(key: string = cmpKey): Component {
 			return {
-				key: key,
 				onAdd(): void {
 				},
 				onRemove(): void {
@@ -116,7 +115,7 @@ describe("Actor", (): void => {
 			});
 
 			it("sets a component", (): void => {
-				actor.setCmp(cmp);
+				actor.setCmp(cmpKey, cmp);
 				expect(actor.cmp[cmpKey]).toBe(cmp);
 			});
 
@@ -124,9 +123,9 @@ describe("Actor", (): void => {
 				it("does nothing if onAdd throws", (): void => {
 					const old: Component = component();
 					spyOn(cmp, 'onAdd').and.throwError('cmp.onAdd');
-					actor.setCmp(old);
+					actor.setCmp(cmpKey, old);
 					try {
-						actor.setCmp(cmp);
+						actor.setCmp(cmpKey, cmp);
 					}
 					catch(err) {
 					}
@@ -142,7 +141,7 @@ describe("Actor", (): void => {
 
 			beforeEach((): void => {
 				cmp = component();
-				actor.setCmp(cmp);
+				actor.setCmp(cmpKey, cmp);
 			});
 
 			it("calls the component's onRemove method", (): void => {
@@ -166,28 +165,29 @@ describe("Actor", (): void => {
 		});
 
 		describe("", (): void => {
+			const initialisedKey: string = cmpKey;
 			const uninitialisedKey: string = 'other-cmp';
 			let initialised: Component = <any> null;
 			let uninitialised: Component = <any> null;
 
 			beforeEach((): void => {
 				initialised = component();
-				actor.setCmp(initialised);
+				actor.setCmp(cmpKey, initialised);
 
 				uninitialised = component(uninitialisedKey);
-				actor.setCmp(uninitialised, false);
+				actor.setCmp(cmpKey, uninitialised, false);
 			});
 
 			it("(sanity check)", (): void => {
-				expect(actor.isInitialised(initialised.key)).toBe(true);
-				expect(actor.isInitialised(uninitialised.key)).toBe(false);
+				expect(actor.isInitialised(initialisedKey)).toBe(true);
+				expect(actor.isInitialised(uninitialisedKey)).toBe(false);
 			});
 
 			describe("init", (): void => {
 				it("ensures all components are initialised", (): void => {
 					actor.init();
-					expect(actor.isInitialised(initialised.key)).toBe(true);
-					expect(actor.isInitialised(uninitialised.key)).toBe(true);
+					expect(actor.isInitialised(initialisedKey)).toBe(true);
+					expect(actor.isInitialised(uninitialisedKey)).toBe(true);
 				});
 				it("doesn't re-initialise components", (): void => {
 					spyOn(initialised, 'onAdd');
@@ -199,8 +199,8 @@ describe("Actor", (): void => {
 			describe("deinit", (): void => {
 				it("ensures all components are removed", (): void => {
 					actor.deinit();
-					expect(actor.isInitialised(initialised.key)).toBe(false);
-					expect(actor.isInitialised(uninitialised.key)).toBe(false);
+					expect(actor.isInitialised(initialisedKey)).toBe(false);
+					expect(actor.isInitialised(uninitialisedKey)).toBe(false);
 				});
 				it("doesn't re-remove components", (): void => {
 					spyOn(uninitialised, 'onRemove');

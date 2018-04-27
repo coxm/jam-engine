@@ -18,8 +18,6 @@ export interface Driver {
 
 /** A controller component which moves an actor according to keyboard input. */
 export abstract class KeyboardControl extends ComponentBase {
-	key: string;
-
 	/** The event batching ID. */
 	private readonly eventsID: symbol = Symbol('KeyboardControl');
 

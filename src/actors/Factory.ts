@@ -17,21 +17,30 @@ export interface ComponentFactory {
  * @see {@link docs/examples/actors.ts} for examples.
  */
 export class Factory<ActorType> {
+	private cmpFactories: Map<string, ComponentFactory> = new Map();
+	private counter: number = 0;
+
 	/**
 	 * Function used to create ActorType instances.
 	 *
 	 * The default creates {@link Actor} instances. Can be overwritten to
 	 * provide custom actor types, or add event hooks.
 	 */
-	create: (
+	create(
 		actorID: symbol,
 		def: ActorDef,
 		components: { [id: string]: Component; },
 		init: boolean
-	) => ActorType;
+	)
+		:	ActorType
+	{
+		return new Actor(actorID, def, components, init) as any;
+	}
 
-	private cmpFactories: Map<string, ComponentFactory> = new Map();
-	private counter: number = 0;
+	/** Function used to determine the key for constructed components. */
+	getCmpKey(cmp: Component): string {
+		return cmp.constructor.name;
+	}
 
 	/** Set the component factory for a type of component. */
 	setCmpFactory(id: string, fn: ComponentFactory): this {
@@ -57,7 +66,7 @@ export class Factory<ActorType> {
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
 			const cmp: Component = this.component(cmpDef, actorID, def);
-			const key: string = cmp.key || cmp.constructor.name;
+			const key: string = this.getCmpKey(cmp);
 			if (components[key]) {
 				throw new Error(`Duplicated component key "${key}"`);
 			}
@@ -79,9 +88,3 @@ export class Factory<ActorType> {
 		return (<ComponentFactory> factory)(cmpDef, actorID, actorDef);
 	}
 }
-Factory.prototype.create = (
-	actorID: symbol,
-	def: ActorDef,
-	components: { [id: string]: Component; },
-	init: boolean
-): Actor => new Actor(actorID, def, components, init);

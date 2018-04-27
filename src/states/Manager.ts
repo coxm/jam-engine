@@ -140,7 +140,7 @@ export class Manager<State, Trigger> {
 
 	private nodes = new Map<Identifier, Node<State, Trigger>>();
 	private list: Node<State, Trigger>[] = [];
-	private curr: Node<State, Trigger>;
+	private curr: Node<State, Trigger> = null as any;
 
 	constructor(options: ManagerOptions<State, Trigger> = {}) {
 		if (options.states) {
@@ -493,7 +493,7 @@ export class Manager<State, Trigger> {
 	 * Jump to another state.
 	 *
 	 * @param key an alias or ID for the new state.
-	 * @param exit an exit strategy for leaving the current state.
+	 * @param change a function which performs the state change.
 	 * @throws {Error} if the referred-to state doesn't exist.
 	 */
 	jump(key: Identifier, change: TriggerCallback<State, Trigger>): void {

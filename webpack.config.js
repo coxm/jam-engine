@@ -5,32 +5,41 @@ const webpack = require('webpack');
 if (!process.env.NODE_ENV) {
   throw new Error("No NODE_ENV setting");
 }
+const IS_DEV = process.env.NODE_ENV ==='development';
 const IS_PROD = process.env.NODE_ENV === 'production';
+const IS_TESTING = process.env.NODE_ENV === 'testing';
 const PORT = process.env.PORT || '3000';
 const HOST = process.env.HOST || 'localhost';
 
 
-const entry = [
-  path.resolve(__dirname, 'src/index.ts'),
-  path.resolve(__dirname, 'test/index.ts'),
-  path.resolve(__dirname, 'docs/index.ts'),
-];
-if (!IS_PROD) {
-  entry.unshift(
-    `webpack-dev-server/client?http://${HOST}:${PORT}`);
+const entry = {
+  lib: path.resolve(__dirname, 'src/index.ts'),
+  test: path.resolve(__dirname, 'test/index.ts'),
+  docs: path.resolve(__dirname, 'docs/index.ts'),
+};
+if (IS_DEV) {
+  entry.serve = `webpack-dev-server/client?http://${HOST}:${PORT}`;
 }
+
+
+const output = {
+  path: path.join(__dirname, 'build'),
+  filename: '[name].js',
+};
+if (IS_TESTING) {
+  output.library = 'jam-engine';
+  output.libraryTarget = 'umd';
+  output.umdNamedDefine = true;
+}
+
+
+console.log('Mode', IS_PROD ? 'production' : 'development');
 module.exports = {
   mode: IS_PROD ? 'production' : 'development',
   target: 'web',
   devtool: IS_PROD ? 'cheap-module' : 'cheap-module-source-map',
   entry,
-  output: {
-    path: path.join(__dirname, 'lib'),
-    filename: 'index.js',
-    library: 'jam-engine',
-    libraryTarget: 'umd',
-    umdNamedDefine: true,
-  },
+  output,
   resolve: {
     alias: {
       jam: path.join(__dirname, 'src'),

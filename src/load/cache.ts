@@ -52,7 +52,7 @@ export function cache(store: AnyStoreArg, keyGetter: AnyKeyGetter)
 {
 	return function decorator(
 		target: any,
-		propKey: string,
+		propKey: string | symbol,
 		desc: PropertyDescriptor
 	)
 		: void
