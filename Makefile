@@ -1,5 +1,4 @@
 ts_compiler_bin=./node_modules/typescript/bin/tsc
-karma_bin=./node_modules/karma/bin/karma
 
 
 build_dir=build
@@ -26,11 +25,6 @@ png_assets=$(svg_assets:%.svg=%.png)
 typings_bin=node_modules/typings/dist/bin.js
 
 
-define karma_start
-$(karma_bin) start karma.conf.js
-endef
-
-
 .PHONY: all
 all: js tests
 	
@@ -48,32 +42,12 @@ tests:
 
 .PHONY: test
 test:
-	$(karma_start) --single-run=true
-
-
-.PHONY: test-server
-test-server:
-	$(karma_start) --single-run=false
-
-
-.PHONY: coverage
-coverage: $(build_dir)/coverage/html/index.html
-	
-
-
-$(build_dir)/coverage/html/index.html: $(test_outputs)
-	mkdir -p "$(@D)"
-	$(karma_start) --single-run=true --reporters=coverage
+	npm run test
 
 
 .PHONY: clean
 clean:
 	rm -r $(build_dir)
-
-
-.PHONY: typings-install
-typings-install:
-	$(typings_bin) install
 
 
 .PHONY: assets
