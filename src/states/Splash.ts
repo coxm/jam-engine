@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 import {noop} from 'jam/util/misc';
 import {loadTextures} from 'jam/load/textures';
 

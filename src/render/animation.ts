@@ -1,3 +1,5 @@
+import * as PIXI from 'pixi.js';
+
 import {Range, range, combine} from 'jam/util/range';
 import {dictMap} from 'jam/util/misc';
 

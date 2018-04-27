@@ -14,6 +14,8 @@ const HOST = process.env.HOST || 'localhost';
 
 const entry = {
   lib: path.resolve(__dirname, 'src/index.ts'),
+  test: path.resolve(__dirname, 'test/index.ts'),
+  docs: path.resolve(__dirname, 'docs/index.ts'),
 };
 if (IS_DEV) {
   entry.serve = `webpack-dev-server/client?http://${HOST}:${PORT}`;

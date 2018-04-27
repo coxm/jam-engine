@@ -190,8 +190,9 @@ describe("numeric utility", (): void => {
 				}
 
 				const rand: number = randInRange(a, b);
-				expect(a <= rand).toBe(true);
-				expect(rand <= b).toBe(true);
+				const str: string = `randInRange(${a}, ${b}) was ${rand}`;
+				expect(a <= rand).toBe(true, str);
+				expect(rand <= b).toBe(true, str);
 			}
 		});
 	});

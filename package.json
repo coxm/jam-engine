@@ -20,12 +20,12 @@
   "author": "coxm",
   "license": "GPL-3.0",
   "devDependencies": {
-    "@types/jest": "^22.2.3",
+    "@types/jasmine": "^2.8.6",
     "@types/p2": "^0.7.31",
     "@types/pixi.js": "^4.7.3",
     "awesome-typescript-loader": "^5.0.0",
+    "jasmine": "^3.1.0",
     "jasmine-core": "2.5.2",
-    "jest": "^22.4.3",
     "ts-jest": "^22.4.4",
     "typescript": "^2.4.1",
     "webpack": "^4.6.0",
@@ -34,19 +34,5 @@
   "dependencies": {
     "p2": "^0.7.1",
     "pixi.js": "4.3.4"
-  },
-  "jest": {
-    "transform": {
-      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-    },
-    "testRegex": "(/test/.*\\.ts)",
-    "moduleNameMapper": {
-      "jam/(.*)": "<rootDir>/src/$1.ts"
-    },
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js"
-    ]
   }
 }

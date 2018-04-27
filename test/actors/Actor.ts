@@ -164,7 +164,7 @@ describe("Actor", (): void => {
 			});
 		});
 
-		describe("", (): void => {
+		describe("[initialisation]", (): void => {
 			const initialisedKey: string = cmpKey;
 			const uninitialisedKey: string = 'other-cmp';
 			let initialised: Component = <any> null;
@@ -172,13 +172,13 @@ describe("Actor", (): void => {
 
 			beforeEach((): void => {
 				initialised = component();
-				actor.setCmp(cmpKey, initialised);
+				actor.setCmp(initialisedKey, initialised);
 
 				uninitialised = component(uninitialisedKey);
-				actor.setCmp(cmpKey, uninitialised, false);
+				actor.setCmp(uninitialisedKey, uninitialised, false);
 			});
 
-			it("(sanity check)", (): void => {
+			it("[sanity check]", (): void => {
 				expect(actor.isInitialised(initialisedKey)).toBe(true);
 				expect(actor.isInitialised(uninitialisedKey)).toBe(false);
 			});
