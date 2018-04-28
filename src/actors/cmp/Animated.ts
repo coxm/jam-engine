@@ -38,6 +38,16 @@ export class Animated extends ComponentBase {
 		return this.current;
 	}
 
+	/** Check if an animation exists. */
+	has(id: number|string): boolean {
+		return !!this.anims[id];
+	}
+
+	/**
+	 * Select an animation.
+	 *
+	 * @throws Error if the animation doesn't exist.
+	 */
 	select(id: number|string): void {
 		const newAnim = this.anims[id];
 		if (newAnim === this.current) {
@@ -46,16 +56,22 @@ export class Animated extends ComponentBase {
 		else if (!newAnim) {
 			throw new Error(`No '${id}' anim`);
 		}
-		const old = this.current;
-		if (old.parent) {
-			old.parent.addChild(newAnim);
-			old.parent.removeChild(old);
+		this.selectClip(newAnim);
+	}
+
+	/**
+	 * Attempt to select a new animation.
+	 *
+	 * @returns false if no new animation could be selected, or that animation
+	 * is currently being played.
+	 */
+	trySelect(id: number|string): boolean {
+		const newAnim = this.anims[id];
+		if (!newAnim || newAnim === this.current) {
+			return false;
 		}
-		this.current = newAnim;
-		if (old.playing) {
-			old.stop();
-			newAnim.play();
-		}
+		this.selectClip(newAnim);
+		return true;
 	}
 
 	play(): void {
@@ -64,5 +80,18 @@ export class Animated extends ComponentBase {
 
 	stop(): void {
 		this.current.stop();
+	}
+
+	private selectClip(clip: PIXI.extras.MovieClip): void {
+		const old = this.current;
+		if (old.parent) {
+			old.parent.addChild(clip);
+			old.parent.removeChild(old);
+		}
+		this.current = clip;
+		if (old.playing) {
+			old.stop();
+			clip.play();
+		}
 	}
 }
