@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 import {Range, range, combine} from 'jam/util/range';
-import {dictMap} from 'jam/util/misc';
+import {dictMap, randInRange} from 'jam/util/misc';
 
 
 export type FrameList = Range | (Range | number)[];
@@ -9,20 +9,24 @@ export type FrameList = Range | (Range | number)[];
 
 export interface AnimationDef {
 	/** Frames in this animation. If unspecified, all frames are used. */
-	readonly frames?: FrameList;
+	frames?: FrameList;
 	/** An optional anchor. Defaults to [0.5, 0.5]. */
-	readonly anchor?: AnyVec2;
+	anchor?: AnyVec2;
 	/** Whether to concatenate with the rewound animation. */
-	readonly rewind?: boolean;
+	rewind?: boolean;
+	/** The animation speed. Takes precedence over `randomSpeed`.  */
+	speed?: number;
+	/** Set a random speed. */
+	randomSpeed?: [number, number];
 }
 
 
 export interface SpriteSheetDef {
-	readonly texture: PIXI.Texture;
-	readonly frameWidth: number;
-	readonly frameHeight: number;
-	readonly frameCount: number;
-	readonly animations: {
+	texture: PIXI.Texture;
+	frameWidth: number;
+	frameHeight: number;
+	frameCount: number;
+	animations: {
 		[id: string]: AnimationDef;
 		[id: number]: AnimationDef;
 	};
@@ -76,6 +80,14 @@ export function animation(
 	}
 	else {
 		anim.anchor.set(0.5, 0.5);
+	}
+
+	if (typeof def.speed === 'number') {
+		anim.animationSpeed = def.speed;
+	}
+	else if (def.randomSpeed) {
+		anim.animationSpeed = randInRange(
+			def.randomSpeed[0], def.randomSpeed[1]);
 	}
 
 	return anim;
