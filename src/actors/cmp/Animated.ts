@@ -84,14 +84,15 @@ export class Animated extends ComponentBase {
 
 	private selectClip(clip: PIXI.extras.MovieClip): void {
 		const old = this.current;
+		clip.position.set(old.position.x, old.position.y);
+		this.current = clip;
+		if (old.playing) {
+			clip.play();
+			old.stop();
+		}
 		if (old.parent) {
 			old.parent.addChild(clip);
 			old.parent.removeChild(old);
-		}
-		this.current = clip;
-		if (old.playing) {
-			old.stop();
-			clip.play();
 		}
 	}
 }
