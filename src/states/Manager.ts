@@ -14,9 +14,9 @@ export type TriggerCallback<State, Trigger> = (
 
 export interface TransitionBase<State, Trigger> {
 	/** The trigger for this transition or `null` if caused by a jump. */
-	readonly trigger: Trigger | null;
+	trigger: Trigger | null;
 	/** A callback for shutting down the old state and initialising the new. */
-	readonly change?: TriggerCallback<State, Trigger>;
+	change?: TriggerCallback<State, Trigger>;
 }
 
 
@@ -25,7 +25,7 @@ export interface IDTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
 	/** The ID of the new state. */
-	readonly id: Identifier;
+	id: Identifier;
 }
 
 
@@ -34,7 +34,7 @@ export interface RelationTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
 	/** The relationship between the current state and the new state. */
-	readonly rel: Relation;
+	rel: Relation;
 }
 
 
@@ -43,7 +43,7 @@ export interface FinderTransition<State, Trigger>
 	extends TransitionBase<State, Trigger>
 {
 	/** A function which returns an identifier for the next state. */
-	readonly find: (
+	find: (
 		this: FinderTransition<State, Trigger>,
 		id: number,
 		state: State,
@@ -72,28 +72,28 @@ type UnionTransition<State, Trigger> = (
  * @see {@link Manager#add}.
  */
 export interface AddOptions<State, Trigger> {
-	readonly alias?: PropertyKey;
-	readonly children?: (Identifier | State)[];
-	readonly transitions?: Transition<State, Trigger>[];
-	readonly parent?: Identifier | State;
+	alias?: PropertyKey;
+	children?: (Identifier | State)[];
+	transitions?: Transition<State, Trigger>[];
+	parent?: Identifier | State;
 }
 
 
 export interface TriggerEventStateInfo<State> {
-	readonly state: State;
-	readonly id: number;
-	readonly alias: PropertyKey | undefined;
+	state: State;
+	id: number;
+	alias: PropertyKey | undefined;
 }
 
 
 /** Event passed to transition `change` callbacks. */
 export interface TriggerEvent<State, Trigger> {
 	/** The trigger that caused the transition (if any). */
-	readonly trigger: Trigger | null;
+	trigger: Trigger | null;
 	/** Info on the old state. */
-	readonly old: TriggerEventStateInfo<State>;
+	old: TriggerEventStateInfo<State>;
 	/** Info on the new state. */
-	readonly new: TriggerEventStateInfo<State>;
+	new: TriggerEventStateInfo<State>;
 }
 
 
@@ -142,7 +142,7 @@ export class Manager<State, Trigger> {
 	private list: Node<State, Trigger>[] = [];
 	private curr: Node<State, Trigger> = null as any;
 
-	constructor(options: ManagerOptions<State, Trigger> = {}) {
+	constructor(options: Readonly<ManagerOptions<State, Trigger>> = {}) {
 		if (options.states) {
 			for (const [alias, state, stateOpts] of options.states as any) {
 				this.add(state, Object.assign({}, stateOpts, {
@@ -604,6 +604,14 @@ export class Manager<State, Trigger> {
 		return siblings[index + 1];
 	}
 
+	private requireNextSiblingKey(node: Node<State, Trigger>): Identifier {
+		const id = this.getNextSiblingKey(node);
+		if (id !== undefined) {
+			return id;
+		}
+		throw new Error('No more siblings');
+	}
+
 	private getParent(key: Identifier): Node<State, Trigger> {
 		const node = this.getNode(key);
 		if (node.parent === undefined) {
@@ -648,22 +656,47 @@ export class Manager<State, Trigger> {
 					`Invalid transition: ${trans.trigger} from ${this.curr.id}`
 				);
 			case Relation.sibling: {
-				const nextID = this.getNextSiblingKey(this.curr);
-				if (nextID === undefined) {
-					throw new Error("No more siblings");
-				}
-				return nextID;
+				return this.requireNextSiblingKey(this.curr);
 			}
 			case Relation.siblingElseUp: {
 				const nextID = this.getNextSiblingKey(this.curr)!;
 				return nextID === undefined ? this.curr.parent! : nextID;
 			}
-			case Relation.parent:
-				return this.curr.parent!;
 			case Relation.child:
-				return this.curr.children[0];
+				if (this.curr.children[0] !== undefined) {
+					return this.curr.children[0];
+				}
+				throw new Error('No children');
+			case Relation.childElseSibling: {
+				const child = this.curr.children[0];
+				if (typeof child === 'number') {
+					return child;
+				}
+				return this.requireNextSiblingKey(this.curr);
+			}
+			case Relation.childElseSiblingElseUp: {
+				let next: Identifier | undefined = this.curr.children[0];
+				if (next !== undefined) {
+					return next;
+				}
+				next = this.getNextSiblingKey(this.curr);
+				if (next !== undefined) {
+					return next;
+				}
+				next = this.curr.parent;
+				if (next !== undefined) {
+					return next;
+				}
+				throw new Error('No child/sibling/parent');
+			}
+			case Relation.parent:
+				if (this.curr.parent !== undefined) {
+					return this.curr.parent;
+				}
+				throw new Error('No parent');
 			case Relation.same:
 				return this.curr.id;
 		}
+		throw new Error('Invalid transition');
 	}
 }
