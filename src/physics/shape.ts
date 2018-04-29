@@ -87,11 +87,51 @@ export type AnyShapeDef = (
 
 
 /**
+ * Parse an individual collision mask token.
+ *
+ * @param token the token to parse.
+ * @param groups the collision groups available.
+ * @param masks an optional dict of existing collision masks.
+ *
+ * @example
+ * parseCollisionMaskToken('0x
+ */
+const parseCollisionMaskToken = (
+	token: string,
+	groups: {[key: string]: number;},
+	masks?: {[key: string]: number;}
+)
+	: number =>
+{
+	if (/^(0x)?\d+$/.test(token)) {
+		return +token;
+	}
+	if (/^0b\d+$/.test(token)) {
+		return parseInt(token.substr(2), 2);
+	}
+	if (token === '*') {
+		return -1;
+	}
+	if (token[0] === '~') {
+		return ~parseCollisionMaskToken(token.substr(1), groups, masks);
+	}
+	if (groups[token] !== undefined) {
+		return groups[token];
+	}
+	if (masks && masks[token] !== undefined) {
+		return masks[token];
+	}
+	throw new Error(`Can't parse collision mask token '${token}'`);
+};
+
+
+/**
  * Parse collision mask strings.
  *
- * @param groups the collision groups available.
  * @param input the collision mask, as a comma-, space- and/or '|'-separated
- * list.
+ * list stored in a string.
+ * @param groups the collision groups available.
+ * @param masks an optional dict of existing collision masks.
  *
  * @example
  * parseCollisionMask({
@@ -108,25 +148,8 @@ export const parseCollisionMask = (
 	: number =>
 {
 	return input.split(/[\s\|,;]+/).reduce(
-		(mask: number, group: string): number => {
-			let val: number | undefined;
-			if (typeof group === 'number') {
-				val = group;
-			}
-			else if (group === '*') {
-				val = -1;
-			}
-			else if (groups[group] !== undefined) {
-				val = groups[group];
-			}
-			else if (masks) {
-				val = masks[group];
-			}
-			if (typeof val !== 'number') {
-				throw new Error(`Invalid group '${group}' from '${input}'`);
-			}
-			return mask | val;
-		},
+		(mask: number, token: string): number =>
+			mask | parseCollisionMaskToken(token, groups, masks),
 		0
 	);
 };
