@@ -1,10 +1,15 @@
 import * as PIXI from 'pixi.js';
 
 import {Range, range, combine} from 'jam/util/range';
-import {dictMap, randInRange} from 'jam/util/misc';
+import {dictMap, randInRange, randIntInRange} from 'jam/util/misc';
 
 
-export type FrameList = Range | (Range | number)[];
+export interface Randomiser {
+	randIn: [number, number];
+}
+
+
+export type FrameList = Range | (Range | number)[] | Randomiser;
 
 
 export interface AnimationDef {
@@ -103,17 +108,24 @@ export function* frames(
 )
 	:	IterableIterator<PIXI.Rectangle>
 {
+	let iter: Iterable<number>;
 	if (!ranges) {
-		ranges = <Range> {
+		iter = range({
 			beg: 0,
 			pre: (imageWidth / frameWidth) * (imageHeight / frameHeight),
-		};
+		});
 	}
-
-	const iter = ((<Iterable<Range | number>> ranges)[Symbol.iterator]
-		?	combine(<Iterable<number | Range>> ranges)
-		:	range(<Range> ranges)
-	);
+	else if ((ranges as Randomiser).randIn) {
+		iter = [randIntInRange(
+			(ranges as Randomiser).randIn[0],
+			(ranges as Randomiser).randIn[1])];
+	}
+	else if ((ranges as Iterable<Range | number>)[Symbol.iterator]) {
+		iter = combine(ranges as Iterable<Range | number>);
+	}
+	else {
+		iter = range(ranges as Range);
+	}
 
 	for (const index of iter) {
 		const xStart: number = frameWidth * index;
