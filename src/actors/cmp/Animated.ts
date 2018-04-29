@@ -85,6 +85,7 @@ export class Animated extends ComponentBase {
 	private selectClip(clip: PIXI.extras.MovieClip): void {
 		const old = this.current;
 		clip.position.set(old.position.x, old.position.y);
+		clip.rotation = old.rotation;
 		this.current = clip;
 		if (old.playing) {
 			clip.play();
