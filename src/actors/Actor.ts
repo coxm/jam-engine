@@ -8,6 +8,8 @@
 
 /** The base interface for a component definition. */
 export interface ComponentDef {
+	/** Optionally specify a type key for this component. */
+	readonly key?: string;
 	/** The ID of the factory to use for this component definition. */
 	readonly factory: string;
 }

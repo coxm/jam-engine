@@ -38,8 +38,11 @@ export class Factory<ActorType> {
 	}
 
 	/** Function used to determine the key for constructed components. */
-	getCmpKey(cmp: Component): string {
-		return cmp.constructor.name;
+	getCmpKey(cmpDef: ComponentDef, cmp: Component): string {
+		if (!cmpDef.key) {
+			throw new Error("Can't determine key for component");
+		}
+		return cmpDef.key;
 	}
 
 	/** Set the component factory for a type of component. */
@@ -73,7 +76,7 @@ export class Factory<ActorType> {
 		for (let i: number = 0, len: number = def.cmp.length; i < len; ++i) {
 			const cmpDef: ComponentDef = def.cmp[i];
 			const cmp: Component = this.component(cmpDef, actorID, def);
-			const key: string = this.getCmpKey(cmp);
+			const key: string = this.getCmpKey(cmpDef, cmp);
 			if (components[key]) {
 				throw new Error(`Duplicated component key "${key}"`);
 			}
