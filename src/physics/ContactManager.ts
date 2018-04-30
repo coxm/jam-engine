@@ -1,4 +1,4 @@
-import {World, Body, Shape} from 'p2';
+import {World, Body, Shape, ContactEquation} from 'p2';
 
 import {noop} from 'jam/util/misc';
 import {pair} from 'jam/util/pairing';
@@ -11,7 +11,7 @@ export interface P2BeginContactEvent {
 	shapeB: Shape;
 	bodyA: Body;
 	bodyB: Body;
-	contactEquations: p2.ContactEquation[];
+	contactEquations: ContactEquation[];
 }
 
 
