@@ -76,9 +76,11 @@ export interface StateMethods<PreloadData, InitData> {
  */
 export class State<PreloadData = any, InitData = PreloadData> {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
-	static fromHooks<P, I>(hooks: StateMethods<P, I>): State<P, I> {
-		return Object.assign(new State(), hooks);
-	}
+
+	static fromHooks: <Methods extends StateMethods<any, any>, OutT = State>(
+		methods: Methods,
+		...initData: any[]
+	) => OutT & Methods;
 
 	private preloaded: Promise<PreloadData> | null = null;
 	private initialised: Promise<InitData> | null = null;
@@ -374,3 +376,12 @@ export class State<PreloadData = any, InitData = PreloadData> {
 		this.flags |= StateFlags.running;
 	}
 }
+
+
+State.fromHooks = (
+	function State_fromHooks(this: any, hooks: any, ...initArgs: any[]) {
+		return Object.assign(
+			new (this.prototype instanceof State ? this : State)(...initArgs),
+			hooks);
+	}
+) as typeof State.fromHooks;
