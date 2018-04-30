@@ -1,5 +1,3 @@
-import * as PIXI from 'pixi.js';
-
 import {Actor, Component} from '../Actor';
 
 

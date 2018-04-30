@@ -1,5 +1,3 @@
-import * as PIXI from 'pixi.js';
-
 import {Pool} from 'jam/util/Pool';
 
 

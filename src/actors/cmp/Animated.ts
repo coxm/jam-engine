@@ -1,5 +1,3 @@
-import * as PIXI from 'pixi.js';
-
 import {SpriteSheetDef, animations} from 'jam/render/animation';
 
 import {ComponentBase, ComponentDef} from '../Actor';
