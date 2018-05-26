@@ -1,13 +1,13 @@
-import * as p2 from 'p2';
+import {Body, Shape} from 'p2';
 
 import * as mod from 'jam/physics/body';
 
 
 describe("BodyType enum", (): void => {
 	it("is defined correctly", (): void => {
-		expect(mod.BodyType.dynamic).toBe(p2.Body.DYNAMIC);
-		expect(mod.BodyType.static).toBe(p2.Body.STATIC);
-		expect(mod.BodyType.kinematic).toBe(p2.Body.KINEMATIC);
+		expect(mod.BodyType.dynamic).toBe(Body.DYNAMIC);
+		expect(mod.BodyType.static).toBe(Body.STATIC);
+		expect(mod.BodyType.kinematic).toBe(Body.KINEMATIC);
 	});
 });
 
@@ -15,9 +15,9 @@ describe("BodyType enum", (): void => {
 describe("convert dict", (): void => {
 	it("is configured correctly", (): void => {
 		const checks = <[string, string, number][]> [
-			['DYNAMIC', 'dynamic', p2.Body.DYNAMIC],
-			['KINEMATIC', 'kinematic', p2.Body.KINEMATIC],
-			['STATIC', 'static', p2.Body.STATIC],
+			['DYNAMIC', 'dynamic', Body.DYNAMIC],
+			['KINEMATIC', 'kinematic', Body.KINEMATIC],
+			['STATIC', 'static', Body.STATIC],
 		];
 		for (let [lower, upper, type] of checks) {
 			expect(mod.convert[lower]).toBe(type);
@@ -31,10 +31,10 @@ describe("convert dict", (): void => {
 describe("create function", (): void => {
 	it("accepts regular BodyOptions", (): void => {
 		const body = mod.create({
-			type: p2.Body.STATIC,
+			type: Body.STATIC,
 			position: [1, 2],
 		});
-		expect(body.type).toBe(p2.Body.STATIC);
+		expect(body.type).toBe(Body.STATIC);
 		expect(body.position[0]).toBe(1);
 		expect(body.position[1]).toBe(2);
 	});
@@ -43,7 +43,7 @@ describe("create function", (): void => {
 			type: 'static',
 			position: [1, 2],
 		});
-		expect(body.type).toBe(p2.Body.STATIC);
+		expect(body.type).toBe(Body.STATIC);
 		expect(body.position[0]).toBe(1);
 		expect(body.position[1]).toBe(2);
 	});
@@ -58,10 +58,10 @@ describe("create function", (): void => {
 				collisionMask: 'players, badguys, bullets',
 			}],
 		}, {players: 1, badguys: 2, bullets: 4});
-		expect(body.type).toBe(p2.Body.STATIC);
+		expect(body.type).toBe(Body.STATIC);
 		expect(body.position[0]).toBe(1);
 		expect(body.position[1]).toBe(2);
 		expect(body.shapes.length).toBe(1);
-		expect(body.shapes[0].type).toBe(p2.Shape.CIRCLE);
+		expect(body.shapes[0].type).toBe(Shape.CIRCLE);
 	});
 });

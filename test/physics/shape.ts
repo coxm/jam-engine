@@ -1,18 +1,20 @@
-import * as p2 from 'p2';
+import {
+	Shape, Circle, Particle, Plane, Convex, Line, Box, Capsule, Heightfield,
+} from 'p2';
 
 import * as mod from 'jam/physics/shape';
 
 
 describe("ShapeType enum", (): void => {
 	it("is defined correctly", (): void => {
-		expect(mod.ShapeType.circle).toBe(p2.Shape.CIRCLE);
-		expect(mod.ShapeType.particle).toBe(p2.Shape.PARTICLE);
-		expect(mod.ShapeType.plane).toBe(p2.Shape.PLANE);
-		expect(mod.ShapeType.convex).toBe(p2.Shape.CONVEX);
-		expect(mod.ShapeType.line).toBe(p2.Shape.LINE);
-		expect(mod.ShapeType.box).toBe(p2.Shape.BOX);
-		expect(mod.ShapeType.capsule).toBe(p2.Shape.CAPSULE);
-		expect(mod.ShapeType.heightfield).toBe(p2.Shape.HEIGHTFIELD);
+		expect(mod.ShapeType.circle).toBe(Shape.CIRCLE);
+		expect(mod.ShapeType.particle).toBe(Shape.PARTICLE);
+		expect(mod.ShapeType.plane).toBe(Shape.PLANE);
+		expect(mod.ShapeType.convex).toBe(Shape.CONVEX);
+		expect(mod.ShapeType.line).toBe(Shape.LINE);
+		expect(mod.ShapeType.box).toBe(Shape.BOX);
+		expect(mod.ShapeType.capsule).toBe(Shape.CAPSULE);
+		expect(mod.ShapeType.heightfield).toBe(Shape.HEIGHTFIELD);
 	});
 });
 
@@ -20,14 +22,14 @@ describe("ShapeType enum", (): void => {
 describe("convert dict", (): void => {
 	it("types are configured correctly", (): void => {
 		const checks = <[string, string, number][]> [
-			['circle', 'CIRCLE', p2.Shape.CIRCLE],
-			['particle', 'PARTICLE', p2.Shape.PARTICLE],
-			['plane', 'PLANE', p2.Shape.PLANE],
-			['convex', 'CONVEX', p2.Shape.CONVEX],
-			['line', 'LINE', p2.Shape.LINE],
-			['box', 'BOX', p2.Shape.BOX],
-			['capsule', 'CAPSULE', p2.Shape.CAPSULE],
-			['heightfield', 'HEIGHTFIELD', p2.Shape.HEIGHTFIELD]
+			['circle', 'CIRCLE', Shape.CIRCLE],
+			['particle', 'PARTICLE', Shape.PARTICLE],
+			['plane', 'PLANE', Shape.PLANE],
+			['convex', 'CONVEX', Shape.CONVEX],
+			['line', 'LINE', Shape.LINE],
+			['box', 'BOX', Shape.BOX],
+			['capsule', 'CAPSULE', Shape.CAPSULE],
+			['heightfield', 'HEIGHTFIELD', Shape.HEIGHTFIELD]
 		];
 		for (let [lower, upper, type] of checks) {
 			expect(mod.convert[lower].type).toBe(type, lower);
@@ -37,16 +39,16 @@ describe("convert dict", (): void => {
 	});
 
 	it("classes are configured correctly", (): void => {
-		const checks = <[string, string, number, typeof p2.Shape][]> [
-			['circle', 'CIRCLE', p2.Shape.CIRCLE, p2.Circle],
-			['particle', 'PARTICLE', p2.Shape.PARTICLE, p2.Particle],
-			['plane', 'PLANE', p2.Shape.PLANE, p2.Plane],
-			['convex', 'CONVEX', p2.Shape.CONVEX, p2.Convex],
-			['line', 'LINE', p2.Shape.LINE, p2.Line],
-			['box', 'BOX', p2.Shape.BOX, p2.Box],
-			['capsule', 'CAPSULE', p2.Shape.CAPSULE, p2.Capsule],
-			['heightfield', 'HEIGHTFIELD', p2.Shape.HEIGHTFIELD,
-				p2.Heightfield],
+		const checks = <[string, string, number, typeof Shape][]> [
+			['circle', 'CIRCLE', Shape.CIRCLE, Circle],
+			['particle', 'PARTICLE', Shape.PARTICLE, Particle],
+			['plane', 'PLANE', Shape.PLANE, Plane],
+			['convex', 'CONVEX', Shape.CONVEX, Convex],
+			['line', 'LINE', Shape.LINE, Line],
+			['box', 'BOX', Shape.BOX, Box],
+			['capsule', 'CAPSULE', Shape.CAPSULE, Capsule],
+			['heightfield', 'HEIGHTFIELD', Shape.HEIGHTFIELD,
+				Heightfield],
 		];
 		for (let [lower, upper, type, cls] of checks) {
 			expect(mod.convert[lower].cls).toBe(cls, lower);
@@ -121,8 +123,8 @@ describe("create function", () => {
 
 	it("uses the groups for masks if no custom masks are provided", () => {
 		const shape = mod.create(def, collisionGroups);
-		expect(shape.constructor).toBe(p2.Circle);
-		expect(shape.type).toBe(p2.Shape.CIRCLE);
+		expect(shape.constructor).toBe(Circle);
+		expect(shape.type).toBe(Shape.CIRCLE);
 		expect(shape.position[0]).toBeCloseTo(0.1);
 		expect(shape.position[1]).toBeCloseTo(0.2);
 		expect(shape.collisionGroup).toBe(collisionGroups.players);
@@ -134,8 +136,8 @@ describe("create function", () => {
 		};
 		(def as any).collisionMask = 'people, bullets';
 		const shape = mod.create(def, collisionGroups, collisionMasks);
-		expect(shape.constructor).toBe(p2.Circle);
-		expect(shape.type).toBe(p2.Shape.CIRCLE);
+		expect(shape.constructor).toBe(Circle);
+		expect(shape.type).toBe(Shape.CIRCLE);
 		expect(shape.position[0]).toBeCloseTo(0.1);
 		expect(shape.position[1]).toBeCloseTo(0.2);
 		expect(shape.collisionGroup).toBe(collisionGroups.players);
