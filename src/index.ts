@@ -34,6 +34,5 @@ import 'jam/actors/Actor.ts';
 import 'jam/actors/Loader.ts';
 import 'jam/actors/CachedLoader.ts';
 import 'jam/states/State.ts';
-import 'jam/states/Splash.ts';
 import 'jam/states/Manager.ts';
 import 'jam/states/Relation.ts';
