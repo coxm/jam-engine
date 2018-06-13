@@ -1,3 +1,6 @@
+import * as PIXI from 'pixi.js';
+
+
 /**
  * Camera class.
  *
