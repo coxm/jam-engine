@@ -40,10 +40,6 @@ export const validateImage = (image: SplashImage): void => {
 
 /** Splash screen state. */
 export class Splash extends State<SpriteLike, PIXI.Sprite> {
-	loadTexture(path: string): Promise<PIXI.Texture> {
-		return loadTextures(path);
-	}
-
 	readonly image: SplashImage;
 	readonly onStart: (sprite: PIXI.Sprite) => void;
 	readonly onStop: (sprite: PIXI.Sprite) => void;
@@ -68,6 +64,10 @@ export class Splash extends State<SpriteLike, PIXI.Sprite> {
 		this.onStart = options.onStart || noop;
 		this.onStop = options.onStop || noop;
 		this.autoStop = options.autoStop || null;
+	}
+
+	loadTexture(path: string): Promise<PIXI.Texture> {
+		return loadTextures(path);
 	}
 
 	protected doPreload(): SpriteLike | Promise<SpriteLike> {
