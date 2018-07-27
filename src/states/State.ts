@@ -33,7 +33,7 @@ export interface StateEvent<T, StateT = State> {
 }
 
 
-export interface StateMethods<PreloadData, InitData> {
+export interface StateMethods<PreloadData, InitData, System> {
 	readonly doPreload?: (this: State) => Promise<PreloadData>;
 	readonly onUnload?: (this: State) => void;
 
@@ -46,8 +46,8 @@ export interface StateMethods<PreloadData, InitData> {
 	readonly doPause?: (this: State) => void;
 	readonly doUnpause?: (this: State) => void;
 
-	readonly doAttach?: (this: State) => void;
-	readonly doDetach?: (this: State) => void;
+	readonly doAttach?: (this: State, to: System) => void;
+	readonly doDetach?: (this: State, from: System) => void;
 }
 
 
@@ -74,13 +74,16 @@ export interface StateMethods<PreloadData, InitData> {
  * while paused (perhaps useful if action will begin immediately), and can be
  * detached while running (e.g. to run in the background).
  */
-export class State<PreloadData = any, InitData = PreloadData> {
+export class State<
+	PreloadData = any,
+	InitData = PreloadData,
+	System = any
+> {
 	static onEvent: (type: StateEventType, ev: StateEvent<any>) => void = noop;
 
-	static fromHooks: <Methods extends StateMethods<any, any>, OutT = State>(
-		methods: Methods,
-		...initData: any[]
-	) => OutT & Methods;
+	static fromHooks:
+		<Methods extends StateMethods<any, any, any>, OutT = State>
+		(methods: Methods, ...initData: any[]) => OutT & Methods;
 
 	private preloaded: Promise<PreloadData> | null = null;
 	private initialised: Promise<InitData> | null = null;
@@ -267,21 +270,21 @@ export class State<PreloadData = any, InitData = PreloadData> {
 		return true;
 	}
 
-	attach(): void {
+	attach(system: System): void {
 		if (!(this.flags & StateFlags.initialised)) {
 			throw new Error("State uninitialised");
 		}
 		if (!(this.flags & StateFlags.attached)) {
 			State.onEvent(StateEventType.attaching, {state: this});
-			this.doAttach();
+			this.doAttach(system);
 			this.flags |= StateFlags.attached;
 		}
 	}
 
-	detach(): void {
+	detach(system: System): void {
 		if (this.flags & StateFlags.attached) {
 			State.onEvent(StateEventType.detaching, {state: this});
-			this.doDetach();
+			this.doDetach(system);
 			this.flags &= ~StateFlags.attached;
 		}
 	}
@@ -348,11 +351,11 @@ export class State<PreloadData = any, InitData = PreloadData> {
 	 * Override to provide appliciation-specific attachment logic. For example,
 	 * event listeners might be added to an events manager here.
 	 */
-	protected doAttach(): void {
+	protected doAttach(system: System): void {
 	}
 
 	/** Detach this state from the rest of the game. */
-	protected doDetach(): void {
+	protected doDetach(system: System): void {
 	}
 
 	/** Cause this state to initialise. */
