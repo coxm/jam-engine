@@ -41,7 +41,7 @@ export interface StateMethods<PreloadData, InitData> {
 	readonly doDeinit?: (this: State) => void;
 
 	readonly doStart?: (this: State, initData: InitData) => void;
-	readonly doStop?: (this: State) => void;
+	readonly doStop?: (this: State) => void | Promise<void>;
 
 	readonly doPause?: (this: State) => void;
 	readonly doUnpause?: (this: State) => void;
@@ -167,11 +167,11 @@ export class State<PreloadData = any, InitData = PreloadData> {
 	}
 
 	/** Undo initialisation. */
-	deinit(): void {
+	async deinit(): Promise<void> {
 		if (!this.isInitialised) {
 			return;
 		}
-		this.stop();
+		await this.stop();
 		State.onEvent(StateEventType.deiniting, {state: this});
 		this.doDeinit();
 		this.flags &= ~StateFlags.initialised;
@@ -179,10 +179,10 @@ export class State<PreloadData = any, InitData = PreloadData> {
 	}
 
 	/** Unload and de-initialise this state. */
-	destroy(): void {
-		this.stop();
+	async destroy(): Promise<void> {
+		await this.stop();
 		this.unload();
-		this.deinit();
+		await this.deinit();
 	}
 
 	/**
@@ -214,10 +214,10 @@ export class State<PreloadData = any, InitData = PreloadData> {
 	}
 
 	/** Stop this state. */
-	stop(): void {
+	async stop(): Promise<void> {
 		if (this.flags & StateFlags.running) {
 			State.onEvent(StateEventType.stopping, {state: this});
-			this.doStop();
+			await this.doStop();
 			this.flags &= ~StateFlags.running;
 			this.started = null;
 		}
