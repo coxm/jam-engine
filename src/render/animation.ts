@@ -9,12 +9,26 @@ export interface Randomiser {
 }
 
 
-export type FrameList = Range | (Range | number)[] | Randomiser;
+export type FrameList =
+	Range | (Range | number)[] | Randomiser | PIXI.Rectangle[];
+
+
+export type RectDef =
+	{x: number; y: number; w: number; h: number} |
+	[number, number, number, number] |
+	number[];
+
+
+export type RectLike = RectDef | PIXI.Rectangle;
 
 
 export interface AnimationDef {
 	/** Frames in this animation. If unspecified, all frames are used. */
 	frames?: FrameList;
+	/**
+	 * PIXI.Rectangle instances to use instead of generated frames.
+	 */
+	rects?: RectLike[];
 	/** An optional anchor. Defaults to [0.5, 0.5]. */
 	anchor?: AnyVec2;
 	/** Whether to concatenate with the rewound animation. */
@@ -53,6 +67,13 @@ export function animations(def: SpriteSheetDef)
 }
 
 
+export const createRect = (rct: RectLike) =>
+	rct instanceof PIXI.Rectangle ? rct :
+		rct instanceof Array
+			? new PIXI.Rectangle(rct[0], rct[1], rct[2], rct[3])
+			: new PIXI.Rectangle(rct.x, rct.y, rct.w, rct.h);
+
+
 export function animation(
 	texture: PIXI.Texture,
 	def: AnimationDef,
@@ -61,13 +82,23 @@ export function animation(
 )
 	: PIXI.extras.AnimatedSprite
 {
-	const rects: PIXI.Rectangle[] = [...frames(
-		def.frames,
-		frameWidth,
-		frameHeight,
-		texture.width,
-		texture.height
-	)];
+	let rects: PIXI.Rectangle[];
+	if (def.rects) {
+		rects = def.rects.map(createRect);
+	}
+	else if (def.frames) {
+		rects = def.rects || [...frames(
+			def.frames,
+			frameWidth,
+			frameHeight,
+			texture.width,
+			texture.height
+		)];
+	}
+	else {
+		throw new Error("AnimationDef has no frames or rects");
+	}
+
 	if (def.rewind) {
 		for (let i: number = rects.length - 1; 0 <= i; --i) {
 			rects.push(rects[i]);
