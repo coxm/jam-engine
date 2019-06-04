@@ -24,16 +24,20 @@ export const loadTextures: {
 	(path: string, baseUrl?: string): Promise<PIXI.Texture>;
 	(paths: string[], baseUrl?: string): Promise<PIXI.Texture[]>;
 } = (requested: string|string[], baseUrl: string = ''): Promise<any> => {
+	const paths: string[] = Array.prototype.concat(requested as any);
+	const cache = PIXI.utils.TextureCache;
+	if (!paths.some((path: string) => !cache[path])) {
+		return Promise.resolve(paths.map((path: string) => cache[path]));
+	}
+
 	const loader = pool.get();
 	loader.baseUrl = baseUrl;
-	loader.add(requested);
+	loader.add(paths.filter((path: string) => !cache[path]));
 	return new Promise((resolve, reject): void => {
 		(loader.on('error', reject) as PIXI.loaders.Loader).load((): void => {
-			resolve(
-				typeof requested === 'string'
-					?	PIXI.utils.TextureCache[requested]
-					:	requested.map(p => PIXI.utils.TextureCache[p])
-			);
+			resolve(typeof requested === 'string'
+				? PIXI.utils.TextureCache[requested]
+				: paths.map((path: string) => PIXI.utils.TextureCache[path]));
 		});
 	});
 };
