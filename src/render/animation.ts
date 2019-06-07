@@ -1,7 +1,7 @@
 import * as PIXI from 'pixi.js';
 
 import {Range, range, combine} from 'jam/util/range';
-import {dictMap, randInRange, randIntInRange} from 'jam/util/misc';
+import {randInRange, randIntInRange} from 'jam/util/misc';
 
 
 export interface Randomiser {
@@ -37,10 +37,13 @@ export interface AnimationDef {
 	speed?: number;
 	/** Set a random speed. */
 	randomSpeed?: [number, number];
+	/** Optional name for this animation. */
+	name?: string;
 }
 
 
 export interface SpriteSheetDef {
+	name?: string;
 	texture: PIXI.Texture;
 	frameWidth: number;
 	frameHeight: number;
@@ -53,17 +56,19 @@ export interface SpriteSheetDef {
 
 
 export function animations(def: SpriteSheetDef)
-	:	{
-		[key: string]: PIXI.extras.AnimatedSprite;
-		[key: number]: PIXI.extras.AnimatedSprite;
-	}
+	:	Record<string|number, PIXI.extras.AnimatedSprite>
 {
-	return dictMap(
-		{},
-		def.animations,
-		(anim: AnimationDef) => animation(
-			def.texture, anim, def.frameWidth, def.frameHeight)
-	);
+	const addName = def.name === undefined
+		?	((anim: AnimationDef) => anim)
+		:	((anim: AnimationDef, key: string | number): AnimationDef =>
+				Object.assign({name: `${def.name}:${key}`}, anim));
+	const out: Record<string | number, PIXI.extras.AnimatedSprite> = {};
+	for (const key in def.animations) {
+		const anim = addName(def.animations[key], key);
+		out[key] = animation(
+			def.texture, anim, def.frameWidth, def.frameHeight);
+	}
+	return out;
 }
 
 
@@ -110,6 +115,9 @@ export function animation(
 			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
 		)
 	);
+	if (def.name !== undefined) {
+		anim.name = def.name;
+	}
 
 	if (def.anchor) {
 		anim.anchor.set(def.anchor[0], def.anchor[1]);
