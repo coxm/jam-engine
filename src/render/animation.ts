@@ -44,7 +44,7 @@ export interface AnimationDef {
 
 export interface SpriteSheetDef {
 	name?: string;
-	texture: PIXI.Texture;
+	texture: PIXI.Texture | PIXI.BaseTexture;
 	frameWidth: number;
 	frameHeight: number;
 	frameCount: number;
@@ -80,7 +80,7 @@ export const createRect = (rct: RectLike) =>
 
 
 export function animation(
-	texture: PIXI.Texture,
+	base: PIXI.BaseTexture | PIXI.Texture,
 	def: AnimationDef,
 	frameWidth: number,
 	frameHeight: number
@@ -96,8 +96,8 @@ export function animation(
 			def.frames,
 			frameWidth,
 			frameHeight,
-			texture.width,
-			texture.height
+			base.width,
+			base.height
 		)];
 	}
 	else {
@@ -110,11 +110,12 @@ export function animation(
 		}
 	}
 
-	const anim = new PIXI.extras.AnimatedSprite(
-		rects.map(
-			(rect: PIXI.Rectangle) => new PIXI.Texture(<any> texture, rect)
-		)
-	);
+	const baseTexture: PIXI.BaseTexture = (base instanceof PIXI.Texture)
+		?	base.baseTexture
+		:	base;
+	const textures: PIXI.Texture[] = rects.map(
+		(rect: PIXI.Rectangle) => new PIXI.Texture(baseTexture, rect));
+	const anim = new PIXI.AnimatedSprite(textures);
 	if (def.name !== undefined) {
 		anim.name = def.name;
 	}
