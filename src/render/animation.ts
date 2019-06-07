@@ -56,13 +56,13 @@ export interface SpriteSheetDef {
 
 
 export function animations(def: SpriteSheetDef)
-	:	Record<string|number, PIXI.extras.AnimatedSprite>
+	:	Record<string|number, PIXI.AnimatedSprite>
 {
 	const addName = def.name === undefined
 		?	((anim: AnimationDef) => anim)
 		:	((anim: AnimationDef, key: string | number): AnimationDef =>
 				Object.assign({name: `${def.name}:${key}`}, anim));
-	const out: Record<string | number, PIXI.extras.AnimatedSprite> = {};
+	const out: Record<string | number, PIXI.AnimatedSprite> = {};
 	for (const key in def.animations) {
 		const anim = addName(def.animations[key], key);
 		out[key] = animation(
@@ -85,7 +85,7 @@ export function animation(
 	frameWidth: number,
 	frameHeight: number
 )
-	: PIXI.extras.AnimatedSprite
+	: PIXI.AnimatedSprite
 {
 	let rects: PIXI.Rectangle[];
 	if (def.rects) {

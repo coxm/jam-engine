@@ -24,7 +24,6 @@
  *     main menu.
  */
 import {State} from 'jam/states/State';
-import {Splash} from 'jam/states/Splash';
 import {Relation} from 'jam/states/Relation';
 import {Manager, TriggerEvent, Transition} from 'jam/states/Manager';
 
@@ -77,7 +76,7 @@ export const manager = new Manager<State, Trigger>({
 const startFirstLevelOnPlayGame: Transition<State, Trigger> = {
 	trigger: Trigger.playGame,
 	change(ev: TriggerEvent<State, Trigger>): void {
-		ev.old.state.detach();  // Keep the main menu alive in the background.
+		ev.old.state.detach(null);  // Keep main menu alive in the background.
 		ev.new.state.start();
 	},
 	rel: Relation.child,  // Start this (main menu) state's first child.
@@ -142,7 +141,6 @@ const mainMenuID = manager.add(new MainMenu(), {
 				returnToMainMenu,
 			],
 		}),
-		manager.add(new Splash('GameComplete.png'))
 	],
 });
 manager.setInitial(mainMenuID);  // Set the initial state.

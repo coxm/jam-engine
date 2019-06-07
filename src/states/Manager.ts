@@ -558,7 +558,7 @@ export class Manager<State, Trigger> {
 	private getOrCreateNode(arg: Identifier | State): Node<State, Trigger> {
 		return typeof arg === 'object'
 			?	this.createNode(arg)
-			:	this.getNode(arg);
+			:	this.getNode(arg as Identifier);
 	}
 
 	private createNode(
@@ -588,7 +588,7 @@ export class Manager<State, Trigger> {
 		if (node) {
 			return node;
 		}
-		throw new Error(`No such state: ${key}`);
+		throw new Error(`No such state: ${String(key)}`);
 	}
 
 	private getNextSiblingKey(node: Node<State, Trigger>)
@@ -615,7 +615,7 @@ export class Manager<State, Trigger> {
 	private getParent(key: Identifier): Node<State, Trigger> {
 		const node = this.getNode(key);
 		if (node.parent === undefined) {
-			throw new Error(`State ${key} has no parent`);
+			throw new Error(`State ${String(key)} has no parent`);
 		}
 		return this.getNode(node.parent);
 	}

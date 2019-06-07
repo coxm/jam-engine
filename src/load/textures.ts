@@ -7,7 +7,7 @@ const pool = new Pool<PIXI.loaders.Loader>({
 	create: () => new PIXI.loaders.Loader(),
 	reset(loader: PIXI.loaders.Loader) {
 		(loader as any).removeAllListeners();
-		return loader.reset();
+		return (loader as any).reset();
 	},
 });
 
@@ -30,14 +30,15 @@ export const loadTextures: {
 		return Promise.resolve(paths.map((path: string) => cache[path]));
 	}
 
-	const loader = pool.get();
+	const loader: any = pool.get();
 	loader.baseUrl = baseUrl;
 	loader.add(paths.filter((path: string) => !cache[path]));
 	return new Promise((resolve, reject): void => {
-		(loader.on('error', reject) as PIXI.loaders.Loader).load((): void => {
+		loader.on('error', reject).load((): void => {
 			resolve(typeof requested === 'string'
 				? PIXI.utils.TextureCache[requested]
 				: paths.map((path: string) => PIXI.utils.TextureCache[path]));
+			pool.reclaim(loader);
 		});
 	});
 };

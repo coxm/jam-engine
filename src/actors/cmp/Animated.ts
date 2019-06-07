@@ -13,12 +13,9 @@ export interface AnimatedDef extends ComponentDef, SpriteSheetDef {
 
 
 export class Animated extends ComponentBase {
-	private readonly anims: {
-		[id: string]: PIXI.extras.MovieClip;
-		[id: number]: PIXI.extras.MovieClip;
-	} = {};
+	private readonly anims: Record<string|number, PIXI.AnimatedSprite> = {};
 
-	private current: PIXI.extras.MovieClip;
+	private current: PIXI.AnimatedSprite;
 
 	constructor(def: AnimatedDef, actorID: number) {
 		super(actorID);
@@ -33,7 +30,7 @@ export class Animated extends ComponentBase {
 		this.current.play();
 	}
 
-	get renderable(): PIXI.extras.MovieClip {
+	get renderable(): PIXI.AnimatedSprite {
 		return this.current;
 	}
 
@@ -81,7 +78,7 @@ export class Animated extends ComponentBase {
 		this.current.stop();
 	}
 
-	private selectClip(clip: PIXI.extras.MovieClip): void {
+	private selectClip(clip: PIXI.AnimatedSprite): void {
 		const old = this.current;
 		clip.position.set(old.position.x, old.position.y);
 		clip.rotation = old.rotation;
