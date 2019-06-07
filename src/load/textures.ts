@@ -3,9 +3,9 @@ import * as PIXI from 'pixi.js';
 import {Pool} from 'jam/util/Pool';
 
 
-const pool = new Pool<PIXI.loaders.Loader>({
-	create: () => new PIXI.loaders.Loader(),
-	reset(loader: PIXI.loaders.Loader) {
+const pool = new Pool<PIXI.Loader>({
+	create: () => new PIXI.Loader(),
+	reset(loader: PIXI.Loader) {
 		(loader as any).removeAllListeners();
 		return (loader as any).reset();
 	},
@@ -15,7 +15,7 @@ const pool = new Pool<PIXI.loaders.Loader>({
 /**
  * Load an array of textures by absolute path.
  *
- * Uses {@link PIXI.loaders.Loader} instances to load textures.
+ * Uses {@link PIXI.Loader} instances to load textures.
  *
  * @param paths the array of texture paths.
  * @returns a promise which resolves with the loaded textures.
