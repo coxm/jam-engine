@@ -1,4 +1,6 @@
 # Jam engine
+**Please note: this repository has been archived!**
+
 A game jam engine.
 
 
