@@ -4,7 +4,7 @@ import {Actor, Component} from '../Actor';
 
 
 export class MultiRender implements Component {
-	key: string;
+	key: string = '';
 
 	readonly renderable: PIXI.Container;
 
