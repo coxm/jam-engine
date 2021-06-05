@@ -6,7 +6,6 @@ import 'jam/util/hash.ts';
 import 'jam/util/misc.ts';
 import 'jam/util/range.ts';
 import 'jam/util/keys.ts';
-import 'jam/util/debug.ts';
 import 'jam/util/vec2.ts';
 import 'jam/util/iterate.ts';
 import 'jam/util/url.ts';
