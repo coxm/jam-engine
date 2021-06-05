@@ -1,13 +1,13 @@
 import {Actor, ActorDef, Component, ComponentDef} from './Actor';
 
 
-export interface ComponentFactory {
+export interface ComponentFactory<Def = unknown> {
 	/**
 	 * @param cmpDef - the component definition.
 	 * @param actorID - the unique ID of the owning Actor.
 	 * @param actorDef - the owning actor's definition.
 	 */
-	(cmpDef: ComponentDef, actorID: number, actorDef: ActorDef): Component;
+	(cmpDef: Def, actorID: number, actorDef: ActorDef): Component;
 }
 
 
@@ -17,7 +17,7 @@ export interface ComponentFactory {
  * @see {@link docs/examples/actors.ts} for examples.
  */
 export class Factory<ActorType> {
-	private cmpFactories: Map<string, ComponentFactory> = new Map();
+	private cmpFactories: Map<string, ComponentFactory<unknown>> = new Map();
 	private numActors: number = 0;
 
 	/**
@@ -46,15 +46,24 @@ export class Factory<ActorType> {
 	}
 
 	/** Set the component factory for a type of component. */
-	setCmpFactory(id: string, fn: ComponentFactory): this {
-		this.cmpFactories.set(id, fn);
+	setCmpFactory<Def extends ComponentDef>(
+		id: string,
+		fn: ComponentFactory<Def>
+	)
+		: this
+	{
+		this.cmpFactories.set(id, fn as ComponentFactory);
 		return this;
 	}
 
 	/** Set multiple component factories at a time. */
-	setCmpFactories(obj: { [id: string]: ComponentFactory; }): this {
+	setCmpFactories<Def extends ComponentDef>(
+		obj: { [id: string]: ComponentFactory; }
+	)
+		: this
+	{
 		for (const id in obj) {
-			this.cmpFactories.set(id, obj[id]);
+			this.cmpFactories.set(id, obj[id] as ComponentFactory);
 		}
 		return this;
 	}

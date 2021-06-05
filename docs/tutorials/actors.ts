@@ -74,14 +74,19 @@ export const factory = new Factory<Actor>();
 
 
 // # Configure component factories.
-// This method can be called multiple times, and single component factories can
-// be set via the `Factory#setCmpFactory` method.
-factory.setCmpFactories({
-	health: (def: HealthDef, actorID: number, actorDef: ActorDef): Health =>
-		new Health(def),
-	weapon: (def: WeaponDef, actorID: number, actorDef: ActorDef): Weapon =>
-		new Weapon(def),
-});
+const createHealthComponent = (
+	def: HealthDef,
+	actorID: number,
+	actorDef: ActorDef,
+): Health => new Health(def as HealthDef);
+factory.setCmpFactory('health', createHealthComponent);
+
+const createWeaponComponent = (
+	def: WeaponDef,
+	actorID: number,
+	actorDef: ActorDef,
+): Weapon => new Weapon(def as WeaponDef);
+factory.setCmpFactory('weapon', createWeaponComponent);
 
 
 // # Simple actor creation.
