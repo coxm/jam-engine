@@ -130,9 +130,12 @@ export function initKeyEvents(
 	}
 	const down = onKeyEvent.bind(null, keydown, condense, true);
 	const up = onKeyEvent.bind(null, keyup, condense, false);
-	target.addEventListener('keydown', down);
-	target.addEventListener('keyup', up);
-	allKeyEvents.set(target, {down, up});
+	target.addEventListener('keydown', down as EventListener);
+	target.addEventListener('keyup', up as EventListener);
+	allKeyEvents.set(target, {
+		down: down as EventListener,
+		up: up as EventListener,
+	});
 }
 
 
