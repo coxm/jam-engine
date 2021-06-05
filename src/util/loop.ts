@@ -3,14 +3,14 @@ export interface LoopFunction<Context> {
 }
 
 
-export interface LoopOptions<Context> {
+export interface LoopOptions<Context = never> {
 	readonly fn: LoopFunction<Context>;
 	readonly ms: number;
-	readonly ctx?: Context;
+	readonly ctx: Context;
 }
 
 
-export class Loop<Context> {
+export class Loop<Context = never> {
 	readonly fn: LoopFunction<Context>;
 	readonly ms: number;
 	readonly ctx: Context | undefined;
@@ -25,12 +25,10 @@ export class Loop<Context> {
 
 	start(): void {
 		if (this.intervalID === 0) {
-			const fn = this.fn;
-			const ctx = this.ctx;
 			let prev: number = Date.now();
 			this.intervalID = setInterval((): void => {
 				const now: number = Date.now();
-				fn.call(ctx, now, now - prev);
+				this.fn.call(this.ctx as Context, now, now - prev);
 				prev = now;
 			}, this.ms);
 		}
