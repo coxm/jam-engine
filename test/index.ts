@@ -1,6 +1,5 @@
 import 'jam/index';
 
-import './load/cache';
 import './load/BaseLoader';
 import './util/pairing';
 import './util/naryRelations';
