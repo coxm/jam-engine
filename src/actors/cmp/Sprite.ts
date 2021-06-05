@@ -4,7 +4,7 @@ import {Actor, Component} from '../Actor';
 
 
 export class Sprite implements Component {
-	key: string;
+	key: string = '';
 
 	readonly renderable: PIXI.Sprite;
 
