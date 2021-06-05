@@ -63,11 +63,6 @@ export function numberOr(x: any, ifNot: number): number {
 }
 
 
-export function collect<T>(array: T[][]): T[] {
-	return Array.prototype.concat.apply([], array);
-}
-
-
 export function uniqueKey<T>(x: T): keyof T {
 	let unique: any = undefined;
 	for (const key in x) {

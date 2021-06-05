@@ -7,7 +7,6 @@ import {
 	realOr,
 	numberOr,
 	randInRange,
-	collect,
 }
 from 'jam/util/misc';
 
@@ -193,15 +192,5 @@ describe("numeric utility", (): void => {
 				expect(rand <= b).toBe(true, str);
 			}
 		});
-	});
-});
-
-
-describe("collect", (): void => {
-	it("collects all arrays in an array together", (): void => {
-		expect(collect<number|string>([
-			[1, 2, 3],
-			['apple', 'pear']
-		])).toEqual([1, 2, 3, 'apple', 'pear']);
 	});
 });
