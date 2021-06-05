@@ -49,7 +49,7 @@ module.exports = {
     rules: [
       {
         test: /\.(d\.)?ts$/,
-        use: [{loader: 'awesome-typescript-loader'}],
+        use: [{loader: 'ts-loader'}],
       },
       {
         test: /\.(sass|scss)$/i,
