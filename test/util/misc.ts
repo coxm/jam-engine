@@ -8,8 +8,6 @@ import {
 	numberOr,
 	randInRange,
 	collect,
-	dictMap,
-	Dict,
 }
 from 'jam/util/misc';
 
@@ -205,51 +203,5 @@ describe("collect", (): void => {
 			[1, 2, 3],
 			['apple', 'pear']
 		])).toEqual([1, 2, 3, 'apple', 'pear']);
-	});
-});
-
-
-describe("dictMap", (): void => {
-	let input: {
-		[key: string]: number;
-		a: number;
-		b: number;
-		c: number;
-	};
-
-	beforeEach((): void => {
-		input = {
-			a: 1,
-			b: 2,
-			c: 3,
-		};
-	});
-
-	it("maps properties", (): void => {
-		const mapped = dictMap(
-			{},
-			input,
-			(v: number, k: string): string => `${k}_${v}`);
-
-		expect(mapped).toEqual({
-			a: 'a_1',
-			b: 'b_2',
-			c: 'c_3',
-		});
-	});
-
-	it("adds to the output object if provided", (): void => {
-		const output = {d: 'existing'};
-		const mapped = dictMap(
-			output,
-			input,
-			(v: number, k: string): string => `${k}_${v}`);
-		expect(mapped).toBe(output);
-		expect(output).toEqual({
-			a: 'a_1',
-			b: 'b_2',
-			c: 'c_3',
-			d: 'existing',
-		} as typeof output & Dict<string>);
 	});
 });

@@ -99,26 +99,3 @@ export function forceArray<T>(x: T | T[]): T[] {
 export const sleep = (milliseconds: number) => new Promise<void>(
 	resolve => setTimeout(resolve, milliseconds)
 );
-
-
-export interface Dict<V> {
-	[key: number]: V;
-	[key: string]: V;
-}
-
-
-export type DictKey = string | number | symbol;
-
-
-export function dictMap<InVal, OutVal, Out extends Object & Dict<OutVal>>(
-	out: Out,
-	input: Dict<InVal> | InVal[],
-	func: (val: InVal, key: DictKey) => OutVal
-)
-	:	Out & Dict<OutVal>
-{
-	for (const key in input) {
-		out[key] = func(input[key], key);
-	}
-	return out;
-}
