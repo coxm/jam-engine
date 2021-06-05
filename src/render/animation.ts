@@ -160,7 +160,7 @@ export function* frames(
 			(ranges as Randomiser).randIn[0],
 			(ranges as Randomiser).randIn[1])];
 	}
-	else if ((ranges as Iterable<Range | number>)[Symbol.iterator]) {
+	else if ((ranges as (Range | number)[])[Symbol.iterator]) {
 		iter = combine(ranges as Iterable<Range | number>);
 	}
 	else {
